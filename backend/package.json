@@ -6,6 +6,7 @@
     "test": "node --test test/*.test.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "operator": "node operator/cli.mjs",
     "db:migrate:local": "wrangler d1 migrations apply open-worktime-intake --local",
     "db:migrate:remote": "wrangler d1 migrations apply open-worktime-intake --remote"
   },
