@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime submission",
+  "description": "Client-supplied privacy-minimal payload before server receipt metadata is attached.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "brand_id",
+    "country",
+    "facility_id",
+    "facility_text",
+    "employment_type",
+    "weekly_hours_bucket",
+    "period_basis"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "brand_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "country": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$"
+    },
+    "facility_id": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Canonical Open Worktime facility identifier when resolved."
+    },
+    "facility_text": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Fallback site name when unresolved. Must not contain personal identifiers."
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "direct_contract",
+        "labor_dispatch",
+        "labor_outsource",
+        "onsite_service",
+        "other_unknown"
+      ]
+    },
+    "weekly_hours_bucket": {
+      "type": "string",
+      "enum": [
+        "lt_35",
+        "35_40",
+        "40_45",
+        "45_50",
+        "50_55",
+        "55_60",
+        "60_65",
+        "65_70",
+        "70_75",
+        "gte_75"
+      ]
+    },
+    "period_basis": { "const": "last_4_complete_weeks" }
+  }
+}
