@@ -1,0 +1,3 @@
+row_id,brand,brand_id,country,region,hours_bucket,count,period
+G1,PUMA,bt-puma,CN,Jiangsu,50_55,18,typical
+G2,PUMA,bt-puma,CN,Jiangsu,55_60,31,typical
