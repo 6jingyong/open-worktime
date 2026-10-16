@@ -1,0 +1,30 @@
+{
+  "schema_version": "country-context-v1",
+  "measure": {
+    "id": "HOW_2EMP_SEX_NB",
+    "label": "Average weekly hours actually worked per employed person",
+    "unit": "hours_per_week",
+    "population": "all_employed_persons",
+    "frequency": "annual",
+    "reference_year": 2025,
+    "context_only": true
+  },
+  "source": {
+    "publisher": "International Labour Organization (ILO)",
+    "dataset": "ILOSTAT modelled estimates",
+    "source_url": "https://rplumber.ilo.org/data/indicator/?id=HOW_2EMP_SEX_NB&format=.csv&channel=ilostat",
+    "retrieved_via": "https://www.nationsinquiry.com/datasets/weekly-hours/2025",
+    "retrieved_at": "2026-10-16",
+    "license": "CC BY 4.0",
+    "notes": "Open Worktime keeps only a small country subset useful to the current prototype. Nations Inquiry states that it read the ILO 2026 release, reshaped it to one row per country, and did not recalculate, rescale, or round the published values."
+  },
+  "records": [
+    { "country": "CN", "country_name": "China", "weekly_hours": 44.56 },
+    { "country": "DE", "country_name": "Germany", "weekly_hours": 29.66 },
+    { "country": "JP", "country_name": "Japan", "weekly_hours": 31.10 },
+    { "country": "NL", "country_name": "Netherlands", "weekly_hours": 26.57 },
+    { "country": "SE", "country_name": "Sweden", "weekly_hours": 29.20 },
+    { "country": "SG", "country_name": "Singapore", "weekly_hours": 44.63 },
+    { "country": "US", "country_name": "United States", "weekly_hours": 36.27 }
+  ]
+}
