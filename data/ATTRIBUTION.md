@@ -28,6 +28,24 @@ Open Supply Hub-derived facility information and derivative facility catalog mat
 
 A facility link means only that the cited source connects the brand and production location. It does not mean the relationship is exclusive, complete, currently active beyond the evidence date, or evidence of any particular labor condition.
 
+## ILO country working-time context
+
+`country-context.json` contains a small real country-level context snapshot based on **International Labour Organization (ILO) ILOSTAT modelled estimates**.
+
+Current measure:
+
+> `HOW_2EMP_SEX_NB` — Average weekly hours actually worked per employed person, 2025.
+
+The checked-in subset covers only a few countries useful to the current prototype. Values were reviewed through Nations Inquiry's 2025 edition, which states that it read the ILO 2026 release, reshaped it to one row per country, and did not recalculate, rescale, or round the published values. The JSON also preserves the canonical ILO indicator download URL.
+
+License:
+
+> ILO databases and datasets made available from 3 May 2023 are covered by **CC BY 4.0** unless otherwise indicated.
+
+This dataset is **context only**. It is a scalar country mean for all employed persons, not a manufacturing-worker distribution, brand-level labor claim, or facility-level observation. Open Worktime never converts these means into histogram buckets or manufacturing weights.
+
+See `docs/CONTEXT_BASELINES.md` for the statistical boundary.
+
 ## Fictional demo observations
 
 `demo-distribution.json` is original fictional test data created only to exercise the prototype UI. It is dedicated to the public domain under **CC0 1.0**.
