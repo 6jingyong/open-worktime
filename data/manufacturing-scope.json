@@ -1,0 +1,51 @@
+{
+  "scope_version": "prototype-2026-10-16",
+  "reviewed_at": "2026-10-16",
+  "brands": [
+    {
+      "brand_id": "demo-atlas-electronics",
+      "coverage": "curated_complete",
+      "locations": [
+        { "country": "CN", "region_aliases": ["Shanghai", "Jiangsu", "CN-SH", "CN-JS"] }
+      ],
+      "facility_ids": [],
+      "note": "Fictional demo scope used only to exercise strict publication-time geography filtering."
+    },
+    {
+      "brand_id": "demo-northstar-appliances",
+      "coverage": "curated_complete",
+      "locations": [
+        { "country": "DE", "region_aliases": ["Bavaria", "Bayern", "DE-BY"] }
+      ],
+      "facility_ids": [],
+      "note": "Fictional demo scope used only to exercise strict publication-time geography filtering."
+    },
+    {
+      "brand_id": "demo-horizon-tools",
+      "coverage": "curated_complete",
+      "locations": [
+        { "country": "US", "region_aliases": ["Texas", "US-TX"] }
+      ],
+      "facility_ids": [],
+      "note": "Fictional demo scope used only to exercise strict publication-time geography filtering."
+    },
+    {
+      "brand_id": "demo-riverlight-mobility",
+      "coverage": "curated_complete",
+      "locations": [
+        { "country": "CN", "region_aliases": ["Shanghai", "CN-SH"] }
+      ],
+      "facility_ids": [],
+      "note": "Fictional demo scope used only to exercise strict publication-time geography filtering."
+    },
+    {
+      "brand_id": "bt-puma",
+      "coverage": "partial",
+      "locations": [
+        { "country": "CN", "region_aliases": ["Jiangsu", "Nantong", "CN-JS"] }
+      ],
+      "facility_ids": ["osh-CN2021159RK49KG"],
+      "note": "Partial pilot coverage only. Partial scopes can confirm a match but must not be used to exclude unlisted locations."
+    }
+  ]
+}

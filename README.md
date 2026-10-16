@@ -4,24 +4,28 @@ Open Worktime is an open prototype for crowdsourcing **actual weekly working tim
 
 Live prototype: https://6jingyong.github.io/open-worktime/
 
-The project intentionally starts narrow:
+The project starts narrow:
 
 - physical goods and manufacturing-oriented brands first;
-- no moral score and no "good/bad company" label;
-- publish the distribution of reported weekly working hours;
-- keep employment identity and work geography visible as filters;
-- keep entity metadata separate from labor-condition observations;
-- keep the public dataset easy to copy, export, mirror, and later distribute over P2P systems.
+- no moral score or automatic "good/bad company" label;
+- publish weekly-hours distributions;
+- keep employment identity visible;
+- treat geography as optional context rather than an intake gate;
+- keep raw accepted observations separate from release-time manufacturing analysis;
+- keep entity metadata separate from labor-condition observations.
 
-## MVP observation
+## What one contributor reports
 
-A contributor reports:
+A v0.4 submission asks for:
 
 1. brand;
-2. work country and, when available, a coarse first-level region;
-3. production site if known;
-4. employment relationship;
-5. average actual weekly working time over the last four complete weeks.
+2. optional country / coarse work region / production site;
+3. employment relationship;
+4. broad work role;
+5. whether total compensation is roughly >=5x typical local full-time income (`yes / no / unknown`);
+6. average actual weekly working time over the last four complete weeks.
+
+It deliberately does **not** ask for exact salary, exact job title, name, employee ID, home address, GPS coordinate, phone number, or personal email.
 
 ### Employment types
 
@@ -31,131 +35,126 @@ A contributor reports:
 - On-site after-sales / service
 - Other or unknown
 
+### Broad work roles
+
+- Production / assembly
+- Manufacturing support (quality, equipment, warehouse, production support)
+- Management
+- Sales
+- Corporate / functional role
+- Other or unknown
+
 ### Weekly-hour buckets
 
-- `<35`
-- `35–<40`
-- `40–<45`
-- `45–<50`
-- `50–<55`
-- `55–<60`
-- `60–<65`
-- `65–<70`
-- `70–<75`
-- `75+`
+`<35`, `35–<40`, `40–<45`, `45–<50`, `50–<55`, `55–<60`, `60–<65`, `65–<70`, `70–<75`, `75+`
 
-The public view is a histogram, not a single score or average.
+## Manufacturing relevance weighting
 
-## Geography
+The default consumer-facing view is intended to represent **ordinary manufacturing labor**, not every person who happens to work for a brand.
 
-v0.3 treats geography as a first-class dimension.
+The current prototype role rule is explicit:
 
-- `country`: ISO 3166-1 alpha-2, such as `CN`, `US`, `DE`;
-- `subdivision_code`: optional coarse ISO 3166-2 first-level region, such as `CN-SH`, `US-TX`, or `DE-BB`.
+| Broad role | Base weight |
+| --- | ---: |
+| Production / assembly | 1.0 |
+| Manufacturing support | 1.0 |
+| Management | 0.25 |
+| Sales | 0 |
+| Corporate / functional role | 0 |
+| Other / unknown | 0.5 |
 
-Known production facilities can supply this geography automatically. Open Worktime does not ask for a worker's home address, GPS coordinate, or precise personal location.
+If a contributor reports compensation roughly >=5x typical local full-time income, their weight is capped at `0.25`.
 
-This enables two different questions:
+Employment identity itself does **not** reduce weight, so labor dispatch and outsourced manufacturing remain visible.
 
-- **brand-first:** how does one brand's working-time distribution differ across regions?
-- **region-first:** what does the pooled community sample look like inside one region across brands?
+## Optional geography, strict publication scope
 
-The second view is not automatically a regional labor-force average because the community sample may be dominated by a few brands or factories. The UI therefore exposes sample size and represented-brand count.
+Geography is simple:
 
-See [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md).
+- `country`: optional two-letter code such as `CN`, `US`, `DE`;
+- `work_region`: optional coarse label such as `Shanghai`, `Texas`, or `Berlin`;
+- known facilities may fill these automatically.
+
+Missing geography is not penalized.
+
+The important distinction is publication-time manufacturing scope:
+
+- `partial` brand scope can confirm known manufacturing locations but cannot exclude unlisted ones;
+- `curated_complete` brand scope is deliberately reviewed before a report release;
+- when a contributor supplies a location outside a `curated_complete` scope, that raw observation remains available but receives manufacturing weight `0` for that release.
+
+This intentionally favors conservative publication. A later report can update the manufacturing-scope catalog and re-run the same historical raw observations.
+
+See [`data/manufacturing-scope.json`](data/manufacturing-scope.json), [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md), and [`docs/PUBLICATION_CYCLE.md`](docs/PUBLICATION_CYCLE.md).
+
+## Batch publication model
+
+Open Worktime does not need to publish every submission as an authoritative statistic in real time.
+
+A nonprofit or community operator can publish monthly, quarterly, or on another explicit cadence:
+
+1. collect raw observations continuously;
+2. freeze a report cutoff;
+3. refresh brand manufacturing countries / regions / facilities;
+4. freeze a versioned `scope_version`;
+5. derive manufacturing weights from that frozen scope and methodology;
+6. publish raw sample counts plus weighted histograms.
+
+Raw observations are not rewritten when the scope database improves.
 
 ## Current prototype
 
-The prototype remains dependency-free: plain HTML, CSS, and JavaScript. It can be hosted directly on GitHub Pages or mirrored as static files.
+The dependency-free GitHub Pages client now includes:
 
-It now includes:
+- a small real brand / owner seed;
+- one evidence-backed production-location pilot;
+- brand search;
+- weekly-hours histograms;
+- employment filters;
+- optional geography filters and a region explorer;
+- manufacturing-weighted vs all-raw views;
+- broad-role and high-income relevance collection;
+- browser-local raw observation storage and JSON export;
+- a versioned manufacturing-scope catalog;
+- release-time analysis generated separately from raw reports.
 
-- a small **real brand and owner catalog seed**;
-- an evidence-backed **production-location pilot**;
-- brand search across names, aliases, and owner companies;
-- weekly-hour histogram;
-- employment-type filters;
-- country / first-level-region filters on brand views;
-- a region-first explorer with sample and represented-brand counts;
-- production-location suggestions in the local prototype submission form;
-- a distribution-shape warning for separated peaks;
-- a privacy-minimal v0.3 intake contract;
-- browser-local report creation plus JSON export;
-- separate machine-readable schemas for client submissions, accepted reports, entities, and facility links.
+The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows target fictional `demo-*` entities.
 
-### Important data boundary
+## Data contracts
 
-The repository currently contains **no real bundled working-time observations**.
-
-Real brands such as Haier, IKEA, PUMA, Toyota, Lexus, Candy, AQUA, Casarte, and Comfee appear only as entity metadata. Their presence is not a claim about their labor conditions.
-
-The bundled histogram observations still target only four fictional `demo-*` brands. CI explicitly rejects demo rows that point at a real brand.
-
-## Entity catalog
-
-The graph separates entities from evidence edges:
-
-```text
-brand
-  └─ owner_company_id → company
-
-brand
-  └─ facility-link evidence → facility
-
-report
-  ├─ brand_id → brand
-  ├─ country / subdivision_code → coarse work geography
-  ├─ facility_id → canonical facility (optional)
-  └─ facility_text → unresolved site fallback (optional)
-```
-
-The first facility pilot uses Open Supply Hub OS ID `CN2021159RK49KG` for NANTONG YUXIN CLOTHING CO.,LTD. The brand-to-facility edge is included because the OS Hub profile lists PUMA in the Supply Chain Network and attributes Final Product Assembly information to PUMA.
-
-This is intentionally a one-location pilot, not an attempt to mirror PUMA's full supplier list.
-
-See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md), [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md), and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
-
-## Submission and report contracts
-
-The client submission is deliberately smaller than the final public record:
+The client submits facts only:
 
 ```json
 {
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "brand_id": "bt-puma",
   "country": "CN",
-  "subdivision_code": "CN-JS",
+  "work_region": "Jiangsu",
   "facility_id": "osh-CN2021159RK49KG",
   "facility_text": null,
   "employment_type": "labor_dispatch",
+  "work_role": "manufacturing_frontline",
+  "high_income_5x": "no",
   "weekly_hours_bucket": "55_60",
   "period_basis": "last_4_complete_weeks"
 }
 ```
 
-A future server validates that payload, then assigns the authoritative report `id`, receipt-time `submitted_at`, and `source = community_report`. The client therefore cannot choose the timestamp used for freshness or historical analysis.
+The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label.
 
-The public observation does **not** need a worker's name, email, phone number, employee ID, exact job title, salary, gender, age, document upload, or written narrative.
+A later report build derives a separate record containing:
 
-Known production sites use `facility_id`. If a site is not yet resolved, it stays separate as `facility_text` rather than being treated as a verified facility entity.
+- `report_id`;
+- `methodology_version`;
+- `scope_version`;
+- `analysis_weight`;
+- public `analysis_flags` explaining that weight.
 
-See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md), and [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md).
+This keeps worker facts stable while allowing later report releases to improve the manufacturing-footprint database.
 
-## Architecture principle
-
-The project separates three problems:
-
-1. **Entity resolution** — what brand, owner company, production site, and coarse region an observation refers to.
-2. **Community input** — how new observations are submitted, validated, rate-limited, and moderated without leaking private intake metadata into the public dataset.
-3. **Public dataset** — how accepted observations and aggregates are exported so that no single website is the only copy.
-
-The current GitHub Pages client only exercises the submission contract locally. A real anonymous ingestion backend has not been deployed yet.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md), and [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md).
+See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`schema/release-analysis.schema.json`](schema/release-analysis.schema.json), and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
 
 ## Licensing
-
-Licenses are deliberately separated:
 
 - **source code:** MIT;
 - **selected Brandtree-derived brand/company seed:** CC BY 4.0;
@@ -163,11 +162,9 @@ Licenses are deliberately separated:
 - **fictional demo entities and demo distributions:** CC0 1.0;
 - **future real community working-time dataset:** not chosen yet.
 
-See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md) before importing or redistributing data.
+See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
 ## Run locally
-
-Serve the repository root with any static HTTP server, for example:
 
 ```bash
 python -m http.server 8000
@@ -175,14 +172,6 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## GitHub Pages
-
-Pages is enabled and deploys automatically from `main` through GitHub Actions.
-
-Live prototype: https://6jingyong.github.io/open-worktime/
-
 ## Status
 
-Prototype / pre-community-data.
-
-The immediate goal is to keep the public observation contract stable enough that a future anonymous ingestion backend can be added without redesigning the client or dataset.
+Prototype / pre-community-data. The next major engineering steps are a real anonymous intake backend and a reproducible monthly/quarterly publication pipeline.

@@ -1,96 +1,120 @@
 # Geography and regional comparison
 
-Open Worktime treats **work geography** as a first-class observation dimension alongside brand and employment identity.
+Open Worktime keeps work geography because it can reveal meaningful differences across factories and regions, but **geography is optional and deliberately simple**.
 
-The purpose is not to infer motive. It is to make questions such as these measurable:
+The useful questions are:
 
-- Does the same brand show different working-time distributions in different countries or regions?
-- Do direct hires and dispatched workers show the same regional pattern?
-- Does a factory system converge toward local working-time norms when a brand operates in multiple jurisdictions?
+- Does the same brand show different working-time distributions in different places?
+- Do direct hires, dispatched workers, and outsourced workers show the same regional pattern?
+- Does one company's labor regime change when it operates under different local institutions and labor markets?
 
-A regional difference is an observation, not proof of discrimination. Local law, product mix, shift design, factory maturity, labor-market conditions, seasonality, supplier structure, and sampling composition can all contribute.
+A regional difference is an observation, not automatic proof of discrimination.
 
-## Geography fields
-
-A v0.3 submission contains:
+## v0.4 geography fields
 
 ```json
 {
   "country": "CN",
-  "subdivision_code": "CN-SH"
+  "work_region": "Shanghai"
 }
 ```
 
-- `country` uses ISO 3166-1 alpha-2.
-- `subdivision_code` uses a coarse ISO 3166-2 first-level subdivision when available.
+Both fields are optional.
 
-Examples:
+- `country` is a two-letter country code when supplied.
+- `work_region` is a short coarse workplace label such as `Shanghai`, `Texas`, `Berlin`, or `Jiangsu`.
 
-- `CN-SH` — Shanghai
-- `US-TX` — Texas
-- `DE-BB` — Brandenburg
+The project does not require contributors to know ISO subdivision codes. It does not ask for home addresses, GPS coordinates, streets, or precise private locations.
 
-The project does **not** ask a contributor for a home address, GPS coordinate, street, or precise personal location.
+Known public facilities may fill country / region automatically.
 
-## Known facilities
+## Intake is permissive; publication can be strict
 
-When a contributor selects a canonical production facility, country and subdivision can be derived from the public facility catalog.
+A report such as:
 
-That is preferable to asking the contributor to type the same location twice. The submitted observation still stores the coarse geography so historical reports remain interpretable even if facility metadata changes later.
+```text
+Brand: Example Auto
+Region: Beijing
+```
 
-## Two useful views
+is accepted as a raw observation even if the current system does not believe that brand manufactures there.
 
-### Brand-first
+The stricter decision happens when a report release is built.
 
-Hold the brand fixed and compare geography:
+Before a monthly or quarterly release, the operator reviews a versioned manufacturing-scope catalog for each brand:
+
+- `partial`: known locations can confirm a match, but unlisted locations cannot be excluded;
+- `curated_complete`: coverage is considered complete enough for that release to be used as a strict manufacturing geography gate.
+
+For `curated_complete` brands:
+
+- supplied geography inside the reviewed scope → normal role-based manufacturing weight;
+- supplied geography outside the reviewed scope → manufacturing weight `0` for that release;
+- no supplied geography → no geography penalty.
+
+The raw observation is never deleted merely because it receives zero manufacturing weight.
+
+This deliberately accepts some false negatives in the headline statistic. A later release can improve the manufacturing-scope database and re-run the same historical observations.
+
+## Why partial and complete coverage are different
+
+A small facility pilot must not pretend to be a complete global manufacturing map.
+
+A `partial` scope can say:
+
+> this location is known to be relevant.
+
+It cannot safely say:
+
+> every other location is irrelevant.
+
+Only a deliberately reviewed `curated_complete` scope can make that exclusion for a specific release.
+
+## Brand-first comparison
+
+Hold brand and worker scope roughly fixed, then compare regions:
 
 ```text
 Brand A
-  ├─ CN-SH → weekly-hours histogram
-  ├─ US-TX → weekly-hours histogram
-  └─ DE-BB → weekly-hours histogram
+  ├─ Shanghai → weekly-hours histogram
+  ├─ Texas    → weekly-hours histogram
+  └─ Berlin   → weekly-hours histogram
 ```
 
-This is usually the strongest way to investigate whether one organization operates with materially different working-time regimes across locations.
+This is usually the strongest regional comparison because brand-specific management and product context are partially controlled.
 
-Employment identity should remain separately filterable so outsourcing or dispatch does not disappear inside a regional average.
+Employment identity and manufacturing-relevance weighting should remain visible.
 
-### Region-first
+## Region-first comparison
 
-Pool reports within a region across brands:
+Pool reports carrying the same coarse region label across brands.
 
-```text
-US-TX
-  └─ reports from Brand A + Brand B + Brand C ...
-```
+This can reveal patterns, but the result is **not automatically the average worker in that region**. Community submissions may be dominated by a few brands, facilities, or job categories.
 
-This can reveal a regional pattern, but it is **not automatically an estimate of the regional labor-force average**. Community samples can be dominated by a few large brands or factories.
+A region-first view should therefore show:
 
-A region-first view should therefore always expose at least:
-
-- number of observations;
+- raw report count;
+- effective weighted sample under the current frozen scope;
 - number of represented brands;
-- employment-identity filter;
-- the weekly-hours histogram itself.
+- employment filter;
+- raw vs manufacturing-weighted mode.
 
-Later methodology may add weighting or minimum-diversity rules, but v0.3 deliberately avoids inventing a hidden weighting model.
+## Why region is not mandatory
 
-## Privacy and publication thresholds
+The project's primary question is about labor time used in manufacturing. A worker who can reliably report brand, role, employment relationship, and weekly hours still provides useful evidence even if they leave location blank.
 
-First-level subdivision is coarse enough for broad comparisons, but it can still combine with a rare employment identity or tiny factory sample to create re-identification risk.
+Missing location is therefore different from contradictory location evidence.
 
-Before real public community data is accepted, Open Worktime should define minimum publication thresholds for small region × brand × employment slices.
+## Interpretation
 
-The raw intake schema can be more granular than the public UI is willing to display.
-
-## Interpretation rule
-
-Open Worktime should report:
+Good wording:
 
 > "The observed working-time distributions differ across these regions."
 
-It should not automatically report:
+Not enough evidence by itself:
 
 > "The company discriminates against workers in region X."
 
-A discrimination claim requires additional causal and legal evidence beyond the working-time distribution alone.
+A discrimination claim needs additional causal and legal evidence beyond the working-time histogram.
+
+See [`PUBLICATION_CYCLE.md`](PUBLICATION_CYCLE.md) for the batch-release workflow.

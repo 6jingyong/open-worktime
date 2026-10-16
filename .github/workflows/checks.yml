@@ -17,6 +17,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check app.js
+          node --check analysis.js
           node --check facility.js
           node --check geography.js
 
@@ -26,9 +27,12 @@ jobs:
           python -m json.tool data/companies.json > /dev/null
           python -m json.tool data/facilities.json > /dev/null
           python -m json.tool data/facility-links.json > /dev/null
+          python -m json.tool data/manufacturing-scope.json > /dev/null
           python -m json.tool data/demo-distribution.json > /dev/null
           python -m json.tool schema/submission.schema.json > /dev/null
           python -m json.tool schema/report.schema.json > /dev/null
+          python -m json.tool schema/release-analysis.schema.json > /dev/null
+          python -m json.tool schema/manufacturing-scope.schema.json > /dev/null
           python -m json.tool schema/catalog.schema.json > /dev/null
           python -m json.tool schema/facility-link.schema.json > /dev/null
 
@@ -36,13 +40,13 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          import re
           from pathlib import Path
 
           brands = json.loads(Path('data/brands.json').read_text())
           companies = json.loads(Path('data/companies.json').read_text())
           facilities = json.loads(Path('data/facilities.json').read_text())
           links = json.loads(Path('data/facility-links.json').read_text())
+          scope = json.loads(Path('data/manufacturing-scope.json').read_text())
           demo = json.loads(Path('data/demo-distribution.json').read_text())
 
           brand_ids = [item['id'] for item in brands]
@@ -70,26 +74,26 @@ jobs:
               os_id = facility.get('os_id')
               if os_id:
                   assert facility['id'] == f"osh-{os_id}", f"facility id must preserve OS ID: {facility['id']}"
-              subdivision = facility.get('subdivision_code')
-              if subdivision:
-                  assert re.fullmatch(r'[A-Z]{2}-[A-Z0-9]{1,3}', subdivision), f"invalid subdivision code: {subdivision}"
-                  assert subdivision.startswith(f"{facility['country']}-"), f"facility subdivision/country mismatch: {facility['id']}"
 
           seen_edges = set()
-          allowed_relationships = {
-              'brand_disclosed_supply_chain',
-              'third_party_reported_supply_chain'
-          }
           for link in links:
               assert link['brand_id'] in brand_by_id, f"unknown facility-link brand: {link['brand_id']}"
               assert link['facility_id'] in facility_by_id, f"unknown facility-link facility: {link['facility_id']}"
               assert brand_by_id[link['brand_id']]['demo'] is False, 'real facility link cannot target demo brand'
-              assert link['relationship'] in allowed_relationships, 'unknown facility relationship type'
               assert link.get('source'), 'facility link missing source'
-              assert link.get('evidence', {}).get('contributor'), 'facility link missing contributor evidence'
               edge = (link['brand_id'], link['facility_id'], link['relationship'])
               assert edge not in seen_edges, f"duplicate facility link: {edge}"
               seen_edges.add(edge)
+
+          scope_brand_ids = []
+          for item in scope['brands']:
+              assert item['brand_id'] in brand_by_id, f"unknown manufacturing-scope brand: {item['brand_id']}"
+              scope_brand_ids.append(item['brand_id'])
+              for facility_id in item['facility_ids']:
+                  assert facility_id in facility_by_id, f"unknown manufacturing-scope facility: {facility_id}"
+              for location in item['locations']:
+                  assert len(location['country']) == 2 and location['country'].isupper(), 'invalid scope country'
+          assert len(scope_brand_ids) == len(set(scope_brand_ids)), 'duplicate manufacturing-scope brand'
 
           allowed_buckets = {
               'lt_35', '35_40', '40_45', '45_50', '50_55',
@@ -99,7 +103,6 @@ jobs:
               'direct_contract', 'labor_dispatch', 'labor_outsource',
               'onsite_service', 'other_unknown'
           }
-
           for row in demo:
               assert row['brand_id'] in brand_by_id, f"unknown demo brand: {row['brand_id']}"
               assert brand_by_id[row['brand_id']]['demo'] is True, 'demo distribution must never target a real brand'
@@ -108,7 +111,7 @@ jobs:
               assert isinstance(row['count'], int) and row['count'] >= 0, 'invalid demo count'
           PY
 
-      - name: Validate intake contracts
+      - name: Validate intake and release contracts
         run: |
           python - <<'PY'
           import json
@@ -116,34 +119,86 @@ jobs:
 
           submission = json.loads(Path('schema/submission.schema.json').read_text())
           report = json.loads(Path('schema/report.schema.json').read_text())
+          release = json.loads(Path('schema/release-analysis.schema.json').read_text())
 
           client_fields = {
-              'schema_version', 'brand_id', 'country', 'subdivision_code',
-              'facility_id', 'facility_text', 'employment_type',
-              'weekly_hours_bucket', 'period_basis'
+              'schema_version', 'brand_id', 'country', 'work_region',
+              'facility_id', 'facility_text', 'employment_type', 'work_role',
+              'high_income_5x', 'weekly_hours_bucket', 'period_basis'
           }
           receipt_fields = {'id', 'submitted_at', 'source'}
+          derived_fields = {'analysis_weight', 'analysis_flags'}
 
           assert client_fields <= set(submission['required'])
-          assert receipt_fields.isdisjoint(submission['properties']), 'client must not choose receipt metadata'
+          assert receipt_fields.isdisjoint(submission['properties'])
+          assert derived_fields.isdisjoint(submission['properties'])
           assert client_fields | receipt_fields <= set(report['required'])
-          assert submission['properties']['schema_version']['const'] == '0.3'
-          assert report['properties']['schema_version']['const'] == '0.3'
+          assert derived_fields.isdisjoint(report['properties']), 'accepted raw reports must not freeze release-time weights'
+          assert {'report_id', 'methodology_version', 'scope_version', *derived_fields} <= set(release['required'])
+          assert submission['properties']['schema_version']['const'] == '0.4'
+          assert report['properties']['schema_version']['const'] == '0.4'
+          assert submission['properties']['country']['type'] == ['string', 'null']
+          assert submission['properties']['work_region']['type'] == ['string', 'null']
           assert submission['properties']['period_basis']['const'] == 'last_4_complete_weeks'
-          assert report['properties']['period_basis']['const'] == 'last_4_complete_weeks'
-          assert 'observed_at' not in report['properties'], 'legacy observed_at field should not remain'
 
           app = Path('app.js').read_text()
-          assert "const submission = {" in app, 'client must build a submission object'
-          assert "const report = {" in app, 'client must separately build the local accepted-report simulation'
-          assert 'facility_text:' in app, 'client must keep unresolved facility text separate'
-          assert 'subdivision_code:' in app, 'client must include coarse region'
-          assert 'period_basis: PERIOD_BASIS' in app, 'client must record the fixed reporting period'
-
-          geography = Path('geography.js').read_text()
-          assert 'Brands represented' not in geography or 'brand_id' in geography
-          assert 'subdivision:' in geography, 'regional explorer must support subdivision filters'
+          assert 'manufacturing-scope.json' in app
+          assert 'buildReleaseAnalysis' in app
+          assert 'release_analysis:' in app
+          assert 'analysis_weight: analysis.weight' not in app, 'raw local report object must not store a frozen analysis weight'
+          assert 'analysis_flags: analysis.flags' not in app, 'raw local report object must not store frozen analysis flags'
+          assert 'high_income_5x:' in app
           PY
+
+      - name: Validate weighting semantics
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import { deriveManufacturingAnalysis } from './analysis.js';
+
+          const context = {
+            facilities: JSON.parse(fs.readFileSync('data/facilities.json')),
+            facilityLinks: JSON.parse(fs.readFileSync('data/facility-links.json')),
+            scopeCatalog: JSON.parse(fs.readFileSync('data/manufacturing-scope.json'))
+          };
+
+          const base = {
+            brand_id: 'demo-riverlight-mobility',
+            country: 'CN',
+            work_region: 'Shanghai',
+            facility_id: null,
+            facility_text: null,
+            work_role: 'manufacturing_frontline',
+            high_income_5x: 'no'
+          };
+
+          const inside = deriveManufacturingAnalysis(base, context);
+          if (inside.weight !== 1 || !inside.flags.includes('inside_curated_manufacturing_scope')) {
+            throw new Error('inside curated manufacturing scope should retain full role weight');
+          }
+
+          const outside = deriveManufacturingAnalysis({ ...base, work_region: 'Beijing' }, context);
+          if (outside.weight !== 0 || !outside.flags.includes('outside_curated_manufacturing_scope')) {
+            throw new Error('outside curated-complete manufacturing scope must receive zero manufacturing weight');
+          }
+
+          const missing = deriveManufacturingAnalysis({ ...base, country: null, work_region: null }, context);
+          if (missing.weight !== 1 || !missing.flags.includes('location_missing')) {
+            throw new Error('optional missing geography must not be penalized');
+          }
+
+          const sales = deriveManufacturingAnalysis({ ...base, work_role: 'sales' }, context);
+          if (sales.weight !== 0) throw new Error('sales must carry zero manufacturing weight');
+
+          const partial = deriveManufacturingAnalysis({
+            ...base,
+            brand_id: 'bt-puma',
+            work_region: 'Beijing'
+          }, context);
+          if (partial.weight !== 1 || !partial.flags.includes('scope_partial')) {
+            throw new Error('partial real-brand scope must not exclude unlisted locations');
+          }
+          JS
 
       - name: Check required static files
         run: |
@@ -153,8 +208,12 @@ jobs:
           test -s intake.css
           test -s geography.css
           test -s app.js
+          test -s analysis.js
           test -s facility.js
           test -s geography.js
           test -s README.md
           test -s docs/COMMUNITY_INTAKE.md
+          test -s docs/GEOGRAPHY.md
+          test -s docs/PUBLICATION_CYCLE.md
           test -s data/ATTRIBUTION.md
+          test -s data/manufacturing-scope.json

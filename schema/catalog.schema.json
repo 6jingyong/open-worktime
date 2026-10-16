@@ -53,6 +53,7 @@
         "id": { "type": "string", "minLength": 1, "maxLength": 200 },
         "name": { "type": "string", "minLength": 1, "maxLength": 300 },
         "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "work_region": { "type": ["string", "null"], "maxLength": 80 },
         "subdivision_code": {
           "type": ["string", "null"],
           "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",

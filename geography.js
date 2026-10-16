@@ -1,3 +1,5 @@
+import { deriveManufacturingAnalysis } from './analysis.js';
+
 const GEO_HOURS_BUCKETS = [
   { id: 'lt_35', label: '<35' },
   { id: '35_40', label: '35–<40' },
@@ -20,19 +22,24 @@ const GEO_EMPLOYMENT_TYPES = [
   { id: 'other_unknown', label: 'Other / unknown' }
 ];
 
-const GEO_STORAGE_KEY = 'open-worktime-local-reports-v0.3';
+const GEO_STORAGE_KEY = 'open-worktime-local-reports-v0.4';
 
 const geoState = {
   facilities: [],
+  facilityLinks: [],
+  manufacturingScope: null,
   selectedRegion: null,
-  employmentFilter: 'all'
+  employmentFilter: 'all',
+  analysisMode: 'weighted'
 };
 
 const geoEls = {
   regionSelect: document.querySelector('#region-select'),
   employmentSelect: document.querySelector('#region-employment'),
+  analysisMode: document.querySelector('#region-analysis-mode'),
   histogram: document.querySelector('#region-histogram'),
   sampleCount: document.querySelector('#region-sample-count'),
+  effectiveCount: document.querySelector('#region-effective-count'),
   brandCount: document.querySelector('#region-brand-count'),
   empty: document.querySelector('#region-empty')
 };
@@ -43,9 +50,18 @@ async function bootRegionExplorer() {
   if (!geoEls.regionSelect || !geoEls.histogram) return;
 
   try {
-    const response = await fetch('./data/facilities.json');
-    if (!response.ok) throw new Error('Failed to load facility geography.');
-    geoState.facilities = await response.json();
+    const [facilitiesResponse, linksResponse, scopeResponse] = await Promise.all([
+      fetch('./data/facilities.json'),
+      fetch('./data/facility-links.json'),
+      fetch('./data/manufacturing-scope.json')
+    ]);
+    if (![facilitiesResponse, linksResponse, scopeResponse].every((response) => response.ok)) {
+      throw new Error('Failed to load regional analysis metadata.');
+    }
+
+    geoState.facilities = await facilitiesResponse.json();
+    geoState.facilityLinks = await linksResponse.json();
+    geoState.manufacturingScope = await scopeResponse.json();
 
     geoEls.employmentSelect.innerHTML = GEO_EMPLOYMENT_TYPES
       .map((item) => `<option value="${item.id}">${item.label}</option>`)
@@ -61,6 +77,11 @@ async function bootRegionExplorer() {
       renderRegionExplorer();
     });
 
+    geoEls.analysisMode?.addEventListener('change', () => {
+      geoState.analysisMode = geoEls.analysisMode.value;
+      renderRegionExplorer();
+    });
+
     window.addEventListener('open-worktime:reports-changed', refreshRegionExplorer);
     window.addEventListener('storage', (event) => {
       if (event.key === GEO_STORAGE_KEY) refreshRegionExplorer();
@@ -73,13 +94,21 @@ async function bootRegionExplorer() {
   }
 }
 
+function analysisContext() {
+  return {
+    facilities: geoState.facilities,
+    facilityLinks: geoState.facilityLinks,
+    scopeCatalog: geoState.manufacturingScope
+  };
+}
+
 function refreshRegionExplorer() {
   const reports = loadGeoReports();
   const previous = geoState.selectedRegion;
   const regions = collectRegions(reports);
 
   geoEls.regionSelect.innerHTML = regions
-    .map((region) => `<option value="${region.id}">${region.label}</option>`)
+    .map((region) => `<option value="${escapeGeoHtml(region.id)}">${escapeGeoHtml(region.label)}</option>`)
     .join('');
 
   if (regions.length === 0) {
@@ -88,27 +117,31 @@ function refreshRegionExplorer() {
     geoState.selectedRegion = previous;
     geoEls.regionSelect.value = previous;
   } else {
-    const preferred = regions.find((region) => region.level === 'subdivision') ?? regions[0];
-    geoState.selectedRegion = preferred.id;
-    geoEls.regionSelect.value = preferred.id;
+    geoState.selectedRegion = regions[0].id;
+    geoEls.regionSelect.value = regions[0].id;
   }
 
   renderRegionExplorer(reports);
 }
 
 function collectRegions(reports) {
+  const regions = new Map();
   const countries = new Set();
-  const subdivisions = new Set();
 
   for (const report of reports) {
-    if (report.country) countries.add(report.country);
-    const subdivision = effectiveGeoSubdivision(report);
-    if (subdivision) subdivisions.add(subdivision);
+    const region = effectiveGeoRegion(report);
+    const country = effectiveGeoCountry(report);
+    if (region) regions.set(normalizeGeoRegion(region), region);
+    if (country) countries.add(country);
   }
 
   return [
-    ...[...subdivisions].sort().map((code) => ({ id: `subdivision:${code}`, label: `${code} · subdivision`, level: 'subdivision' })),
-    ...[...countries].sort().map((code) => ({ id: `country:${code}`, label: `${code} · country`, level: 'country' }))
+    ...[...regions.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, label]) => ({ id: `region:${id}`, label })),
+    ...[...countries]
+      .sort()
+      .map((code) => ({ id: `country:${code}`, label: `${code} · country` }))
   ];
 }
 
@@ -119,14 +152,16 @@ function renderRegionExplorer(reports = loadGeoReports()) {
     (geoState.employmentFilter === 'all' || report.employment_type === geoState.employmentFilter)
   );
 
+  const effective = matching.reduce((sum, report) => sum + reportWeight(report), 0);
   geoEls.sampleCount.textContent = String(matching.length);
+  if (geoEls.effectiveCount) geoEls.effectiveCount.textContent = formatGeoWeight(effective);
   geoEls.brandCount.textContent = String(new Set(matching.map((report) => report.brand_id)).size);
   geoEls.histogram.innerHTML = '';
 
   if (!region || matching.length === 0) {
     geoEls.empty.hidden = false;
     geoEls.empty.textContent = reports.length === 0
-      ? 'No geocoded local observations yet. Add a local report with a country and region to exercise this view.'
+      ? 'No local observations with optional geography yet.'
       : 'No observations match this region and employment filter.';
     return;
   }
@@ -135,22 +170,30 @@ function renderRegionExplorer(reports = loadGeoReports()) {
   const counts = GEO_HOURS_BUCKETS.map(() => 0);
   for (const report of matching) {
     const index = GEO_HOURS_BUCKETS.findIndex((bucket) => bucket.id === report.weekly_hours_bucket);
-    if (index >= 0) counts[index] += 1;
+    if (index < 0) continue;
+    counts[index] += geoState.analysisMode === 'all' ? 1 : reportWeight(report);
+  }
+
+  const denominator = counts.reduce((sum, value) => sum + value, 0);
+  if (denominator === 0) {
+    geoEls.empty.hidden = false;
+    geoEls.empty.textContent = 'This region has raw reports, but none carry manufacturing weight under the current frozen scope. Switch to all raw reports to inspect them.';
+    return;
   }
 
   const max = Math.max(1, ...counts);
   GEO_HOURS_BUCKETS.forEach((bucket, index) => {
     const count = counts[index];
-    const share = matching.length ? (count / matching.length) * 100 : 0;
+    const share = (count / denominator) * 100;
     const width = (count / max) * 100;
     const row = document.createElement('div');
     row.className = 'hist-row';
     row.innerHTML = `
       <span class="hist-label">${bucket.label}</span>
-      <div class="hist-track" title="${count} observations · ${share.toFixed(1)}%">
+      <div class="hist-track" title="${formatGeoWeight(count)} observations · ${share.toFixed(1)}%">
         <div class="hist-fill" style="width: ${width.toFixed(2)}%"></div>
       </div>
-      <span class="hist-value">${count} · ${share.toFixed(1)}%</span>
+      <span class="hist-value">${formatGeoWeight(count)} · ${share.toFixed(1)}%</span>
     `;
     geoEls.histogram.appendChild(row);
   });
@@ -158,23 +201,56 @@ function renderRegionExplorer(reports = loadGeoReports()) {
 
 function matchesRegion(report, region) {
   if (!region) return false;
-  if (region.startsWith('country:')) return report.country === region.slice('country:'.length);
-  if (region.startsWith('subdivision:')) return effectiveGeoSubdivision(report) === region.slice('subdivision:'.length);
+  if (region.startsWith('country:')) return effectiveGeoCountry(report) === region.slice('country:'.length);
+  if (region.startsWith('region:')) return normalizeGeoRegion(effectiveGeoRegion(report)) === region.slice('region:'.length);
   return false;
 }
 
-function effectiveGeoSubdivision(report) {
-  if (report?.subdivision_code) return report.subdivision_code;
+function effectiveGeoCountry(report) {
+  if (report?.country) return String(report.country).toUpperCase();
   if (!report?.facility_id) return null;
-  return geoState.facilities.find((facility) => facility.id === report.facility_id)?.subdivision_code ?? null;
+  return geoState.facilities.find((facility) => facility.id === report.facility_id)?.country ?? null;
+}
+
+function effectiveGeoRegion(report) {
+  if (report?.work_region) return report.work_region;
+  if (!report?.facility_id) return null;
+  const facility = geoState.facilities.find((item) => item.id === report.facility_id);
+  return facility?.work_region ?? facility?.locality ?? facility?.subdivision_code ?? null;
+}
+
+function normalizeGeoRegion(value) {
+  return String(value ?? '').trim().toLocaleLowerCase();
+}
+
+function reportWeight(report) {
+  return deriveManufacturingAnalysis(report, analysisContext()).weight;
 }
 
 function loadGeoReports() {
   try {
     const stored = localStorage.getItem(GEO_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((report) => {
+      const { analysis_weight: _analysisWeight, analysis_flags: _analysisFlags, ...raw } = report ?? {};
+      return raw;
+    });
   } catch {
     return [];
   }
+}
+
+function formatGeoWeight(value) {
+  const numeric = Number(value) || 0;
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function escapeGeoHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }

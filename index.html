@@ -23,8 +23,8 @@
     <section class="hero">
       <p class="eyebrow">Working-time transparency for manufactured goods</p>
       <h1>How many hours do the people who make your products actually work?</h1>
-      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare employment identities and work regions.</p>
-      <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久，以及同一品牌在不同地区是否存在明显差异。</p>
+      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare employment identities and optional work regions.</p>
+      <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久。</p>
 
       <div class="search-row">
         <label class="sr-only" for="brand-search">Search a brand</label>
@@ -44,10 +44,16 @@
           <p id="brand-source" class="source-note"></p>
         </div>
         <div class="sample-card">
-          <span class="sample-label">Sample</span>
+          <span class="sample-label">Raw reports</span>
           <strong id="sample-count">0</strong>
-          <span class="sample-label">observations</span>
+          <span class="sample-label">current-scope n <span id="sample-effective">0</span></span>
         </div>
+      </div>
+
+      <div class="filter-block">
+        <span class="filter-label">Analysis view</span>
+        <div id="analysis-filters" class="chip-row" role="group" aria-label="Analysis weighting filter"></div>
+        <p class="method-note">The default view is recalculated from raw reports using the current frozen manufacturing-scope catalog. A monthly or quarterly release can update that catalog and re-run the same historical observations without rewriting them.</p>
       </div>
 
       <div class="filter-block">
@@ -58,13 +64,13 @@
       <div class="filter-block">
         <span class="filter-label">Work geography</span>
         <div id="geography-filters" class="chip-row" role="group" aria-label="Work geography filter"></div>
-        <p class="method-note">Country and first-level subdivision filters appear when reports contain geography metadata. Examples: CN-SH, US-TX, DE-BB.</p>
+        <p class="method-note">Geography is optional. Missing geography is not penalized. When a brand has a curated-complete manufacturing scope, a supplied location outside that scope receives zero manufacturing weight for that release.</p>
       </div>
 
       <div class="histogram" id="histogram" aria-label="Weekly working hours distribution"></div>
 
       <div id="shape-note" class="shape-note" hidden></div>
-      <p class="method-note">Buckets use reported average actual hours over the last four complete weeks. Bar length is relative to the largest bucket; labels show count and share.</p>
+      <p class="method-note">Buckets use reported average actual hours over the last four complete weeks. In weighted mode, bar counts are effective sample weights rather than raw headcount.</p>
 
       <div class="facility-block" id="facility-block">
         <div class="facility-heading">
@@ -75,7 +81,7 @@
           <span class="facility-scope">Evidence-backed links only</span>
         </div>
         <div id="facility-list" class="facility-list"></div>
-        <p class="method-note">This is not intended to be a complete supplier list. A listed location means the brand-to-facility relationship has a cited source; it does not imply any working-time claim.</p>
+        <p class="method-note">Facility evidence and manufacturing-scope coverage are different things. Partial scope can confirm known locations but cannot exclude missing ones; only a deliberately curated-complete scope is used as a strict geography gate.</p>
       </div>
     </section>
 
@@ -84,7 +90,7 @@
         <div>
           <p class="eyebrow">Region explorer</p>
           <h2>Working-time reports by geography</h2>
-          <p class="muted">Pool reports by country or first-level subdivision to inspect regional patterns across brands.</p>
+          <p class="muted">Inspect optional work-region labels across brands without forcing every contributor to provide a location.</p>
         </div>
       </div>
 
@@ -97,12 +103,23 @@
           <span>Employment identity</span>
           <select id="region-employment" aria-label="Regional employment identity"></select>
         </label>
+        <label>
+          <span>Analysis view</span>
+          <select id="region-analysis-mode" aria-label="Regional analysis mode">
+            <option value="weighted">Manufacturing-weighted</option>
+            <option value="all">All raw reports</option>
+          </select>
+        </label>
       </div>
 
       <div class="region-metrics">
         <div class="region-metric">
-          <span>Sample</span>
+          <span>Raw reports</span>
           <strong id="region-sample-count">0</strong>
+        </div>
+        <div class="region-metric">
+          <span>Current-scope n</span>
+          <strong id="region-effective-count">0</strong>
         </div>
         <div class="region-metric">
           <span>Brands represented</span>
@@ -114,7 +131,7 @@
       <p id="region-empty" class="region-empty"></p>
       <div class="region-warning">
         <strong>Regional sample ≠ regional labor-force average.</strong>
-        Community submissions can be dominated by a few brands, factories, or employment types. Use the brand count and filters when interpreting cross-region differences. The strongest comparison is often the same brand and employment identity across different regions.
+        A region can be dominated by a few brands, factories, or job types. The strongest comparison is usually the same brand and similar worker scope across different regions.
       </div>
     </section>
 
@@ -123,13 +140,13 @@
         <div>
           <p class="eyebrow">Community intake contract preview</p>
           <h2>Prepare one observation</h2>
-          <p class="muted">The prototype still saves only in this browser, but the record uses the same privacy-minimal shape intended for a future anonymous submission API.</p>
+          <p class="muted">The prototype saves raw facts only in this browser. Manufacturing relevance is recalculated later from the frozen scope used by a report release.</p>
         </div>
       </div>
 
       <div class="privacy-boundary" role="note">
-        <strong>Data minimization by default.</strong>
-        <span>Do not enter names, email addresses, phone numbers, employee IDs, or documents. Geography stops at a coarse country / state / province level unless a public production-site entity is already known.</span>
+        <strong>The main statistic is about ordinary manufacturing labor.</strong>
+        <span>Sales, corporate functions, management, and people earning roughly ≥5× typical local full-time income may still submit reports, but those reports receive lower or zero weight in the default manufacturing view. Exact salary and exact job title are not collected.</span>
       </div>
 
       <form id="report-form">
@@ -140,15 +157,15 @@
           </label>
 
           <label>
-            <span>Country</span>
-            <input id="report-country" maxlength="2" placeholder="CN" required />
-            <small>ISO 3166-1 alpha-2, e.g. CN, US, DE</small>
+            <span>Country (optional)</span>
+            <input id="report-country" maxlength="2" placeholder="CN" />
+            <small>Two-letter country code if known. Leave blank if you prefer.</small>
           </label>
 
           <label>
-            <span>Region / state / province</span>
-            <input id="report-subdivision" maxlength="8" placeholder="CN-SH" />
-            <small>ISO 3166-2 first-level subdivision, e.g. CN-SH, US-TX, DE-BB. Known facilities fill this automatically.</small>
+            <span>Work region (optional)</span>
+            <input id="report-region" maxlength="80" placeholder="Shanghai / Texas / Berlin" />
+            <small>Coarse workplace region only. Do not enter a home address.</small>
           </label>
 
           <label>
@@ -161,6 +178,22 @@
           <label>
             <span>Employment identity</span>
             <select id="report-employment" required></select>
+          </label>
+
+          <label>
+            <span>Work role</span>
+            <select id="report-role" required></select>
+            <small>Only a broad role category is collected; no exact title.</small>
+          </label>
+
+          <label>
+            <span>Income roughly ≥5× typical local full-time income?</span>
+            <select id="report-high-income" required>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+              <option value="unknown">Not sure / prefer not to say</option>
+            </select>
+            <small>No salary amount is collected.</small>
           </label>
 
           <label>
@@ -180,27 +213,27 @@
 
       <div class="record-contract">
         <div>
-          <p class="eyebrow">Public record preview</p>
+          <p class="eyebrow">Submission preview</p>
           <h3>What the future intake API would receive</h3>
-          <p class="muted">Known factories use a canonical facility ID. An unlisted site stays separate as fallback text. Region is stored at country / first-level subdivision granularity.</p>
+          <p class="muted">The client sends facts only. Each report release later derives a public weight and reasons from a frozen methodology and manufacturing-scope version.</p>
         </div>
         <pre id="record-preview" aria-live="polite">No local report yet.</pre>
-        <p class="contract-note">Rate-limit signals, network addresses, moderation notes, and optional future employment proof belong to a private intake layer and must not be silently added to the public observation export.</p>
+        <p class="contract-note">Location remains optional and never blocks intake. If a contributor supplies a location that falls outside a brand's curated-complete manufacturing scope, the raw report remains available but receives zero manufacturing weight in that release.</p>
       </div>
     </section>
 
     <section class="principles">
       <article>
         <h3>No moral score</h3>
-        <p>Publish the distribution. Let workers, consumers, researchers, and buyers decide what it means.</p>
+        <p>Publish the distribution, the raw sample count, and the release-time weighting rules.</p>
       </article>
       <article>
-        <h3>Compare like with like</h3>
-        <p>Brand, employment identity, and geography remain separate dimensions so regional gaps can be inspected without baking a judgement into one score.</p>
+        <h3>Manufacturing relevance matters</h3>
+        <p>The default view should represent ordinary production labor, not be dominated by sales staff, headquarters functions, executives, or unusually high-income workers.</p>
       </article>
       <article>
-        <h3>Keep identity out of the public record</h3>
-        <p>The core dataset needs working-time observations and coarse entity references, not names or employee profiles.</p>
+        <h3>Collect broadly, publish conservatively</h3>
+        <p>Keep raw observations intact, then rebuild each monthly or quarterly report after the manufacturing-scope database has been reviewed.</p>
       </article>
     </section>
   </main>
