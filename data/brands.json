@@ -1,0 +1,30 @@
+[
+  {
+    "id": "demo-atlas-electronics",
+    "name": "Atlas Electronics",
+    "sector": "Consumer electronics",
+    "home_country": "SG",
+    "demo": true
+  },
+  {
+    "id": "demo-northstar-appliances",
+    "name": "Northstar Appliances",
+    "sector": "Home appliances",
+    "home_country": "DE",
+    "demo": true
+  },
+  {
+    "id": "demo-horizon-tools",
+    "name": "Horizon Tools",
+    "sector": "Power tools",
+    "home_country": "US",
+    "demo": true
+  },
+  {
+    "id": "demo-riverlight-mobility",
+    "name": "Riverlight Mobility",
+    "sector": "Electric mobility",
+    "home_country": "CN",
+    "demo": true
+  }
+]
