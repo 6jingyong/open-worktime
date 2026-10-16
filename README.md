@@ -56,9 +56,9 @@ It now includes:
 - employment-type filters;
 - production-location suggestions in the local prototype submission form;
 - a distribution-shape warning for separated peaks;
-- a privacy-minimal v0.2 observation contract;
+- a privacy-minimal v0.2 intake contract;
 - browser-local report creation plus JSON export;
-- machine-readable observation, entity-catalog, and facility-link schemas.
+- separate machine-readable schemas for client submissions, accepted reports, entities, and facility links.
 
 ### Important data boundary
 
@@ -91,9 +91,9 @@ This is intentionally a one-location pilot, not an attempt to mirror PUMA's full
 
 See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md) and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
-## Observation contract
+## Submission and report contracts
 
-The public record is deliberately small:
+The client submission is deliberately smaller than the final public record:
 
 ```json
 {
@@ -104,17 +104,17 @@ The public record is deliberately small:
   "facility_text": null,
   "employment_type": "labor_dispatch",
   "weekly_hours_bucket": "55_60",
-  "period_basis": "last_4_complete_weeks",
-  "submitted_at": "2026-10-16T04:10:00Z",
-  "source": "community_report"
+  "period_basis": "last_4_complete_weeks"
 }
 ```
+
+A future server validates that payload, then assigns the authoritative report `id`, receipt-time `submitted_at`, and `source = community_report`. The client therefore cannot choose the timestamp used for freshness or historical analysis.
 
 The public observation does **not** need a worker's name, email, phone number, employee ID, exact job title, salary, gender, age, document upload, or written narrative.
 
 Known production sites use `facility_id`. If a site is not yet resolved, it stays separate as `facility_text` rather than being treated as a verified facility entity.
 
-See [`schema/report.schema.json`](schema/report.schema.json) and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
+See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
 
 ## Architecture principle
 
