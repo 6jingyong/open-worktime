@@ -1,0 +1,77 @@
+name: Data acquisition checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-acquisition:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate acquisition JSON/schema
+        run: |
+          python -m json.tool research/data-source-candidates.json > /dev/null
+          python -m json.tool schema/area-survey-submission.schema.json > /dev/null
+
+      - name: Validate source registry semantics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          registry = json.loads(Path('research/data-source-candidates.json').read_text())
+          assert registry['registry_version'] == 'data-source-candidates-v1'
+          candidates = registry['candidates']
+          ids = [item['source_id'] for item in candidates]
+          assert len(ids) == len(set(ids)), 'duplicate source candidate id'
+          assert any(item['source_id'] == 'better-work-jordan-worker-hours' and item['priority'] == 'P0' for item in candidates)
+          assert any(item['source_id'] == 'better-work-impact-assessment-microdata' and item['priority'] == 'P0' for item in candidates)
+          assert any(item['source_id'] == 'open-worktime-area-survey-pilot' and item['priority'] == 'P0_fallback' for item in candidates)
+          for item in candidates:
+              assert item['title'] and item['publisher']
+              assert item['working_time_measure']
+              assert item['next_action']
+          PY
+
+      - name: Guard area-survey privacy and scope boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          schema = json.loads(Path('schema/area-survey-submission.schema.json').read_text())
+          props = schema['properties']
+          required = set(schema['required'])
+
+          expected = {
+              'schema_version', 'country', 'work_city', 'employment_type',
+              'work_role', 'high_income_5x', 'weekly_hours_bucket', 'period_basis'
+          }
+          assert set(props) == expected
+          assert required == expected
+          assert props['schema_version']['const'] == 'area-survey-v1'
+          assert props['period_basis']['const'] == 'last_4_complete_weeks'
+
+          forbidden = {
+              'brand_id', 'facility_id', 'facility_text', 'company', 'employer',
+              'name', 'email', 'phone', 'employee_id', 'salary', 'exact_salary',
+              'home_address', 'address', 'gps', 'latitude', 'longitude', 'free_text'
+          }
+          assert forbidden.isdisjoint(props), 'area pilot must remain brandless and privacy-minimal'
+
+          docs = Path('docs/AREA_SURVEY_PILOT.md').read_text().lower()
+          for phrase in ['不要填写家庭住址', '不要求填写姓名', '不问公司', 'exact salary']:
+              assert phrase.lower() in docs
+          PY
+
+      - name: Check acquisition docs
+        run: |
+          test -s docs/DATA_ACQUISITION.md
+          test -s docs/AREA_SURVEY_PILOT.md
+          grep -q 'research@betterwork.org' docs/DATA_ACQUISITION.md
