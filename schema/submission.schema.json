@@ -1,33 +1,34 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Open Worktime submission",
-  "description": "Client-supplied privacy-minimal payload before server receipt metadata is attached.",
+  "description": "Client-supplied privacy-minimal payload before server receipt metadata and analysis weight are attached.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "brand_id",
     "country",
-    "subdivision_code",
+    "work_region",
     "facility_id",
     "facility_text",
     "employment_type",
+    "work_role",
+    "high_income_5x",
     "weekly_hours_bucket",
     "period_basis"
   ],
   "properties": {
-    "schema_version": { "const": "0.3" },
+    "schema_version": { "const": "0.4" },
     "brand_id": { "type": "string", "minLength": 1, "maxLength": 160 },
     "country": {
-      "type": "string",
-      "pattern": "^[A-Z]{2}$",
-      "description": "ISO 3166-1 alpha-2 country code for the reported work."
-    },
-    "subdivision_code": {
       "type": ["string", "null"],
-      "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
-      "maxLength": 8,
-      "description": "Optional ISO 3166-2 first-level subdivision code, such as CN-SH, US-TX, or DE-BB. Keep this coarse; do not collect a home address or precise worker location."
+      "pattern": "^[A-Z]{2}$",
+      "description": "Optional ISO 3166-1 alpha-2 work country. Geography is useful context, not an intake gate."
+    },
+    "work_region": {
+      "type": ["string", "null"],
+      "maxLength": 80,
+      "description": "Optional coarse work region as the contributor knows it, for example Shanghai, Texas, or Berlin. Do not enter a home address or precise private location."
     },
     "facility_id": {
       "type": ["string", "null"],
@@ -37,7 +38,7 @@
     "facility_text": {
       "type": ["string", "null"],
       "maxLength": 200,
-      "description": "Fallback site name when unresolved. Must not contain personal identifiers."
+      "description": "Fallback production-site name when unresolved. Must not contain personal identifiers."
     },
     "employment_type": {
       "type": "string",
@@ -48,6 +49,23 @@
         "onsite_service",
         "other_unknown"
       ]
+    },
+    "work_role": {
+      "type": "string",
+      "enum": [
+        "manufacturing_frontline",
+        "manufacturing_support",
+        "management",
+        "sales",
+        "corporate_function",
+        "other_unknown"
+      ],
+      "description": "Broad work role used only to estimate relevance to ordinary manufacturing labor. Exact job title is intentionally not collected."
+    },
+    "high_income_5x": {
+      "type": "string",
+      "enum": ["no", "yes", "unknown"],
+      "description": "Whether total compensation is roughly five times or more than typical local full-time income. No exact salary is collected."
     },
     "weekly_hours_bucket": {
       "type": "string",
