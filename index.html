@@ -13,7 +13,8 @@
 <body>
   <header class="site-header">
     <a class="brand-mark" href="./" aria-label="Open Worktime home">Open Worktime</a>
-    <div class="header-badges" aria-label="Project status">
+    <div class="header-badges" aria-label="Project status and navigation">
+      <a class="badge partner-badge" href="./partners.html">For researchers & NGOs</a>
       <span class="badge">Prototype</span>
       <span class="badge badge-muted">Open dataset</span>
     </div>
@@ -33,6 +34,13 @@
         <button id="brand-search-button" type="button">View distribution</button>
       </div>
       <p class="demo-notice">The catalog contains a small real brand/owner seed, one evidence-backed production-location pilot, and a small ILO country context snapshot. Bundled brand-level working-time observations remain fictional demo data only.</p>
+      <div class="partner-callout">
+        <div>
+          <strong>Already collecting worker or factory data?</strong>
+          <span>You do not need to learn GitHub or convert your dataset to our schema. We can work from a questionnaire, data dictionary, safe aggregate table, or de-identified extract.</span>
+        </div>
+        <a href="./partners.html">Research / NGO collaboration →</a>
+      </div>
     </section>
 
     <section class="panel" id="brand-panel" aria-live="polite">
@@ -249,7 +257,7 @@
 
   <footer>
     <span>Open Worktime · MIT code · mixed-license data · no real bundled brand-level worktime reports</span>
-    <a href="https://github.com/6jingyong/open-worktime">GitHub</a>
+    <span class="footer-links"><a href="./partners.html">Researchers / NGOs</a><a href="https://github.com/6jingyong/open-worktime">GitHub</a></span>
   </footer>
 
   <script type="module" src="./app.js"></script>
