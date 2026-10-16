@@ -12,7 +12,7 @@ The project starts narrow:
 - keep employment identity visible;
 - treat geography as optional context rather than an intake gate;
 - keep raw accepted observations separate from release-time manufacturing analysis;
-- keep entity metadata separate from labor-condition observations.
+- keep entity metadata, regional context, and labor-condition observations separate.
 
 ## What one contributor reports
 
@@ -89,26 +89,33 @@ See [`data/manufacturing-scope.json`](data/manufacturing-scope.json), [`docs/GEO
 
 ## External research imports
 
-Open Worktime also has a staging-first import layer under [`imports/`](imports/) for existing surveys, historical community datasets, NGO research, and manually prepared extracts.
+Open Worktime has a staging-first import layer under [`imports/`](imports/) for existing surveys, historical community datasets, NGO research, and statistical datasets.
 
-External data is **not** forced into the same shape as a fresh community submission. The importer keeps:
+External data is **not** forced into the same shape as a fresh community submission. The importer keeps source/provenance, reuse status, input hash, source record IDs, original time semantics, unresolved entities, and transformation issues.
 
-- source / publisher / URL / retrieval date;
-- explicit reuse status and license metadata;
-- SHA-256 of the exact input file;
-- source record IDs;
-- the source's own working-time period definition;
-- unresolved raw brand names for later entity resolution;
-- transformation issues and comparability flags.
+Three evidence shapes are supported:
 
-Two source shapes are supported:
+- `individual` — one source row represents one observation/person;
+- `aggregate` — one source row represents a distribution cell with a `count`;
+- `aggregate_statistic` — one source row represents a scalar statistic such as mean weekly hours.
 
-- `individual` — one source row represents one observation;
-- `aggregate` — one source row represents a distribution cell with a `count`.
+A scalar mean is never converted into a histogram bucket, and an aggregate count is never expanded into synthetic workers. Only a sufficiently complete individual record using the project's four-complete-week definition can become a `canonical_candidate`; other evidence remains contextual.
 
-Aggregate data is never expanded into synthetic workers. Only an individual record that is semantically compatible with the project's four-complete-week definition can become a `canonical_candidate`; other evidence remains useful context instead of being silently relabeled.
+The manifest mapping is a field whitelist, so unmapped source columns are discarded rather than copied wholesale. Source-specific adapters currently cover ILOSTAT statistical data and restricted-use WorkingTime schedule data. See [`imports/README.md`](imports/README.md).
 
-The manifest mapping is a field whitelist, so unmapped source columns are discarded rather than copied wholesale. See [`imports/README.md`](imports/README.md).
+## Country context baseline
+
+The first checked-in real worktime-related dataset is [`data/country-context.json`](data/country-context.json): a deliberately small 2025 country snapshot based on **ILO ILOSTAT modelled estimates** for average weekly hours actually worked per employed person.
+
+This is broad labor-market context, not manufacturing-worker evidence:
+
+- population = all employed persons;
+- statistic = scalar country mean;
+- it never contributes to brand/facility histograms;
+- it never changes manufacturing-relevance weights;
+- it may be shown even when Open Worktime has zero community reports for that country.
+
+The Region explorer presents the country mean in a separate context card. See [`docs/CONTEXT_BASELINES.md`](docs/CONTEXT_BASELINES.md) and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
 ## Batch publication model
 
@@ -132,6 +139,7 @@ The dependency-free GitHub Pages client includes:
 
 - a small real brand / owner seed;
 - one evidence-backed production-location pilot;
+- a small real ILO country working-time context snapshot;
 - brand search;
 - weekly-hours histograms;
 - employment filters;
@@ -156,7 +164,7 @@ The repository also contains a **disabled-by-default anonymous intake backend** 
 
 `backend/wrangler.jsonc` ships with `WRITE_ENABLED = false` and no D1 binding. Merging the backend code therefore does **not** start collecting real worker data. See [`backend/README.md`](backend/README.md).
 
-The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows and import examples are fictional fixtures.
+The repository still contains **no real bundled brand/facility worker observations**. Real brands remain entity metadata only; bundled histograms and import fixtures are fictional. The ILO country snapshot is real aggregate context and is deliberately kept outside those worker distributions.
 
 ## Data contracts
 
@@ -199,6 +207,7 @@ See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/r
 - **source code:** MIT;
 - **selected Brandtree-derived brand/company seed:** CC BY 4.0;
 - **Open Supply Hub-derived facility data and facility-link material:** CC BY-SA 4.0;
+- **ILO country context snapshot:** CC BY 4.0;
 - **fictional demo entities, demo distributions, and import fixtures:** CC0 1.0;
 - **future real community working-time dataset:** not chosen yet;
 - **external research imports:** retain their own per-source license / permission metadata and are not assumed redistributable merely because they are technically accessible.
@@ -215,4 +224,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. Intake, private moderation, accepted-raw export, private backup, and a provenance-preserving external-data staging pipeline now exist. Public writes remain intentionally disabled. The next useful data work is source-specific adapters/entity resolution for real external datasets rather than prematurely building a publication scheduler.
+Prototype / pre-community-data. Intake, private moderation, accepted-raw export, private backup, external-data staging/adapters, and the first openly licensed country context snapshot now exist. Public writes remain intentionally disabled. The next useful data work is additional openly reusable brand/company/facility-level historical evidence and entity resolution, not a publication scheduler.

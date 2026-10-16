@@ -28,6 +28,7 @@ const geoState = {
   facilities: [],
   facilityLinks: [],
   manufacturingScope: null,
+  countryContext: null,
   selectedRegion: null,
   employmentFilter: 'all',
   analysisMode: 'weighted'
@@ -41,7 +42,11 @@ const geoEls = {
   sampleCount: document.querySelector('#region-sample-count'),
   effectiveCount: document.querySelector('#region-effective-count'),
   brandCount: document.querySelector('#region-brand-count'),
-  empty: document.querySelector('#region-empty')
+  empty: document.querySelector('#region-empty'),
+  countryContext: document.querySelector('#region-country-context'),
+  countryContextValue: document.querySelector('#region-country-context-value'),
+  countryContextMeta: document.querySelector('#region-country-context-meta'),
+  countryContextSource: document.querySelector('#region-country-context-source')
 };
 
 bootRegionExplorer();
@@ -50,18 +55,20 @@ async function bootRegionExplorer() {
   if (!geoEls.regionSelect || !geoEls.histogram) return;
 
   try {
-    const [facilitiesResponse, linksResponse, scopeResponse] = await Promise.all([
+    const [facilitiesResponse, linksResponse, scopeResponse, countryContextResponse] = await Promise.all([
       fetch('./data/facilities.json'),
       fetch('./data/facility-links.json'),
-      fetch('./data/manufacturing-scope.json')
+      fetch('./data/manufacturing-scope.json'),
+      fetch('./data/country-context.json')
     ]);
-    if (![facilitiesResponse, linksResponse, scopeResponse].every((response) => response.ok)) {
+    if (![facilitiesResponse, linksResponse, scopeResponse, countryContextResponse].every((response) => response.ok)) {
       throw new Error('Failed to load regional analysis metadata.');
     }
 
     geoState.facilities = await facilitiesResponse.json();
     geoState.facilityLinks = await linksResponse.json();
     geoState.manufacturingScope = await scopeResponse.json();
+    geoState.countryContext = await countryContextResponse.json();
 
     geoEls.employmentSelect.innerHTML = GEO_EMPLOYMENT_TYPES
       .map((item) => `<option value="${item.id}">${item.label}</option>`)
@@ -126,27 +133,33 @@ function refreshRegionExplorer() {
 
 function collectRegions(reports) {
   const regions = new Map();
-  const countries = new Set();
+  const countries = new Map();
 
   for (const report of reports) {
     const region = effectiveGeoRegion(report);
     const country = effectiveGeoCountry(report);
     if (region) regions.set(normalizeGeoRegion(region), region);
-    if (country) countries.add(country);
+    if (country && !countries.has(country)) countries.set(country, countryContextName(country) ?? country);
+  }
+
+  for (const record of geoState.countryContext?.records ?? []) {
+    if (record.country) countries.set(record.country, record.country_name ?? record.country);
   }
 
   return [
     ...[...regions.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([id, label]) => ({ id: `region:${id}`, label })),
-    ...[...countries]
-      .sort()
-      .map((code) => ({ id: `country:${code}`, label: `${code} · country` }))
+    ...[...countries.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([code, name]) => ({ id: `country:${code}`, label: `${code} · ${name}` }))
   ];
 }
 
 function renderRegionExplorer(reports = loadGeoReports()) {
   const region = geoState.selectedRegion;
+  renderCountryContext(region);
+
   const matching = reports.filter((report) =>
     matchesRegion(report, region) &&
     (geoState.employmentFilter === 'all' || report.employment_type === geoState.employmentFilter)
@@ -161,8 +174,8 @@ function renderRegionExplorer(reports = loadGeoReports()) {
   if (!region || matching.length === 0) {
     geoEls.empty.hidden = false;
     geoEls.empty.textContent = reports.length === 0
-      ? 'No local observations with optional geography yet.'
-      : 'No observations match this region and employment filter.';
+      ? 'No local observations with optional geography yet. Country context can still be shown independently above.'
+      : 'No community observations match this region and employment filter.';
     return;
   }
 
@@ -197,6 +210,31 @@ function renderRegionExplorer(reports = loadGeoReports()) {
     `;
     geoEls.histogram.appendChild(row);
   });
+}
+
+function renderCountryContext(region) {
+  if (!geoEls.countryContext) return;
+  const country = region?.startsWith('country:') ? region.slice('country:'.length) : null;
+  const record = country
+    ? geoState.countryContext?.records?.find((item) => item.country === country)
+    : null;
+
+  if (!record) {
+    geoEls.countryContext.hidden = true;
+    return;
+  }
+
+  const year = geoState.countryContext.measure?.reference_year ?? 'latest';
+  geoEls.countryContext.hidden = false;
+  geoEls.countryContextValue.textContent = `${Number(record.weekly_hours).toFixed(2)} h/week`;
+  geoEls.countryContextMeta.textContent = `${record.country_name} · ${year} · all employed persons · ILO modelled estimate`;
+  if (geoEls.countryContextSource) {
+    geoEls.countryContextSource.href = geoState.countryContext.source?.retrieved_via ?? geoState.countryContext.source?.source_url ?? '#';
+  }
+}
+
+function countryContextName(code) {
+  return geoState.countryContext?.records?.find((item) => item.country === code)?.country_name ?? null;
 }
 
 function matchesRegion(report, region) {

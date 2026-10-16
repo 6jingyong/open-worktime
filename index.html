@@ -32,7 +32,7 @@
         <datalist id="brand-options"></datalist>
         <button id="brand-search-button" type="button">View distribution</button>
       </div>
-      <p class="demo-notice">The catalog contains a small real brand/owner seed and one evidence-backed production-location pilot. Bundled working-time observations remain fictional demo data only.</p>
+      <p class="demo-notice">The catalog contains a small real brand/owner seed, one evidence-backed production-location pilot, and a small ILO country context snapshot. Bundled brand-level working-time observations remain fictional demo data only.</p>
     </section>
 
     <section class="panel" id="brand-panel" aria-live="polite">
@@ -90,7 +90,7 @@
         <div>
           <p class="eyebrow">Region explorer</p>
           <h2>Working-time reports by geography</h2>
-          <p class="muted">Inspect optional work-region labels across brands without forcing every contributor to provide a location.</p>
+          <p class="muted">Inspect optional work-region labels across brands and compare them with a separate country-level labor-market context where available.</p>
         </div>
       </div>
 
@@ -127,11 +127,20 @@
         </div>
       </div>
 
+      <aside id="region-country-context" class="country-context" hidden>
+        <div>
+          <span class="country-context-label">Country context · not part of the histogram</span>
+          <strong id="region-country-context-value">—</strong>
+          <p id="region-country-context-meta"></p>
+        </div>
+        <a id="region-country-context-source" href="#" target="_blank" rel="noreferrer">Source / provenance</a>
+      </aside>
+
       <div class="histogram" id="region-histogram" aria-label="Regional weekly working hours distribution"></div>
       <p id="region-empty" class="region-empty"></p>
       <div class="region-warning">
         <strong>Regional sample ≠ regional labor-force average.</strong>
-        A region can be dominated by a few brands, factories, or job types. The strongest comparison is usually the same brand and similar worker scope across different regions.
+        The ILO country context is a scalar mean for all employed persons, while Open Worktime bars are worker-report distributions scoped toward manufacturing. They are shown together for orientation but are never pooled or converted into each other.
       </div>
     </section>
 
@@ -239,7 +248,7 @@
   </main>
 
   <footer>
-    <span>Open Worktime · MIT code · mixed-license entity data · no real bundled worktime reports</span>
+    <span>Open Worktime · MIT code · mixed-license data · no real bundled brand-level worktime reports</span>
     <a href="https://github.com/6jingyong/open-worktime">GitHub</a>
   </footer>
 
