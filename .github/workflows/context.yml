@@ -1,0 +1,78 @@
+name: Country context checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-country-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate country context JSON
+        run: python -m json.tool data/country-context.json > /dev/null
+
+      - name: Validate context semantics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('data/country-context.json').read_text())
+          assert data['schema_version'] == 'country-context-v1'
+
+          measure = data['measure']
+          assert measure['id'] == 'HOW_2EMP_SEX_NB'
+          assert measure['population'] == 'all_employed_persons'
+          assert measure['unit'] == 'hours_per_week'
+          assert measure['frequency'] == 'annual'
+          assert measure['reference_year'] == 2025
+          assert measure['context_only'] is True
+
+          source = data['source']
+          assert source['publisher'] == 'International Labour Organization (ILO)'
+          assert source['license'] == 'CC BY 4.0'
+          assert source['source_url'].startswith('https://rplumber.ilo.org/')
+          assert source['retrieved_via'].startswith('https://www.nationsinquiry.com/')
+
+          records = data['records']
+          countries = [row['country'] for row in records]
+          assert countries, 'country context snapshot must not be empty'
+          assert len(countries) == len(set(countries)), 'duplicate context country'
+          for row in records:
+              assert len(row['country']) == 2 and row['country'].isupper(), 'invalid ISO2 country code'
+              assert row['country_name'].strip(), 'missing country name'
+              hours = row['weekly_hours']
+              assert isinstance(hours, (int, float)) and not isinstance(hours, bool)
+              assert 0 <= hours <= 168, 'invalid weekly-hours context value'
+          PY
+
+      - name: Guard statistical boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          geography = Path('geography.js').read_text()
+          docs = Path('docs/CONTEXT_BASELINES.md').read_text()
+          html = Path('index.html').read_text()
+
+          assert "fetch('./data/country-context.json')" in geography
+          assert 'region-country-context-value' in geography
+          assert 'weekly_hours_bucket' not in Path('data/country-context.json').read_text(), (
+              'country scalar means must not be encoded as histogram buckets'
+          )
+          assert 'not part of the histogram' in html
+          assert 'never contributes rows to the Open Worktime histogram' in docs
+          assert 'never changes manufacturing-relevance weights' in docs
+          PY
+
+      - name: Check required context files
+        run: |
+          test -s data/country-context.json
+          test -s docs/CONTEXT_BASELINES.md
+          test -s data/ATTRIBUTION.md
