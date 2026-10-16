@@ -19,11 +19,14 @@ const EMPLOYMENT_TYPES = [
   { id: 'other_unknown', label: 'Other / unknown', zh: '其他 / 不确定' }
 ];
 
-const STORAGE_KEY = 'open-worktime-local-reports-v0.1';
+const STORAGE_KEY = 'open-worktime-local-reports-v0.2';
+const LEGACY_STORAGE_KEY = 'open-worktime-local-reports-v0.1';
+const PERIOD_BASIS = 'last_4_complete_weeks';
 
 const state = {
   brands: [],
   companies: [],
+  facilities: [],
   demoDistribution: [],
   localReports: loadLocalReports(),
   selectedBrandId: null,
@@ -48,6 +51,7 @@ const els = {
   reportEmployment: document.querySelector('#report-employment'),
   reportHours: document.querySelector('#report-hours'),
   formStatus: document.querySelector('#form-status'),
+  recordPreview: document.querySelector('#record-preview'),
   exportButton: document.querySelector('#export-button'),
   clearButton: document.querySelector('#clear-button')
 };
@@ -56,24 +60,27 @@ boot();
 
 async function boot() {
   try {
-    const [brandsResponse, companiesResponse, distributionResponse] = await Promise.all([
+    const [brandsResponse, companiesResponse, facilitiesResponse, distributionResponse] = await Promise.all([
       fetch('./data/brands.json'),
       fetch('./data/companies.json'),
+      fetch('./data/facilities.json'),
       fetch('./data/demo-distribution.json')
     ]);
 
-    if (!brandsResponse.ok || !companiesResponse.ok || !distributionResponse.ok) {
+    if (!brandsResponse.ok || !companiesResponse.ok || !facilitiesResponse.ok || !distributionResponse.ok) {
       throw new Error('Failed to load prototype data.');
     }
 
     state.brands = await brandsResponse.json();
     state.companies = await companiesResponse.json();
+    state.facilities = await facilitiesResponse.json();
     state.demoDistribution = await distributionResponse.json();
     state.selectedBrandId = state.brands.find((brand) => brand.demo)?.id ?? state.brands[0]?.id ?? null;
 
     populateBrandControls();
     populateEmploymentControls();
     populateHourControls();
+    renderRecordPreview(state.localReports.at(-1) ?? null);
 
     if (state.selectedBrandId) selectBrand(state.selectedBrandId);
   } catch (error) {
@@ -274,7 +281,7 @@ function detectSeparatedPeaks(counts) {
       const valley = Math.min(...counts.slice(first + 1, second));
       const smallerPeak = Math.min(counts[first], counts[second]);
       if (valley <= smallerPeak * 0.45) {
-        return 'Separated peaks detected. This can be real workforce segmentation (site, role, employment identity) or a sign of sample contamination. The chart is not automatically corrected; inspect the identity filters and future site-level data.';
+        return 'Separated peaks detected. This can be real workforce segmentation (site, role, employment identity) or a sign of sample contamination. The chart is not automatically corrected; inspect the identity filters and site-level data.';
       }
     }
   }
@@ -323,28 +330,38 @@ els.reportForm.addEventListener('submit', (event) => {
     return;
   }
 
+  const facilityInput = els.reportFacility.value.trim();
+  const knownFacility = resolveKnownFacility(facilityInput);
+  if (knownFacility && knownFacility.country !== country) {
+    els.formStatus.textContent = `That known facility is cataloged in ${knownFacility.country}. Please use the matching country code or clear the facility.`;
+    return;
+  }
+
   const report = {
-    schema_version: '0.1',
+    schema_version: '0.2',
     id: globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     brand_id: els.reportBrand.value,
     country,
-    facility_id: els.reportFacility.value.trim() || null,
+    facility_id: knownFacility?.id ?? null,
+    facility_text: facilityInput && !knownFacility ? facilityInput : null,
     employment_type: els.reportEmployment.value,
     weekly_hours_bucket: els.reportHours.value,
-    observed_at: new Date().toISOString(),
+    period_basis: PERIOD_BASIS,
+    submitted_at: new Date().toISOString(),
     source: 'local_prototype'
   };
 
   state.localReports.push(report);
   saveLocalReports();
+  renderRecordPreview(report);
   selectBrand(report.brand_id);
-  els.formStatus.textContent = 'Added locally. This prototype has not uploaded anything to a server.';
+  els.formStatus.textContent = 'Saved locally in the same public record shape a future anonymous intake API can accept. Nothing was uploaded.';
   els.reportFacility.value = '';
 });
 
 els.exportButton.addEventListener('click', () => {
   const payload = {
-    export_version: '0.1',
+    export_version: '0.2',
     exported_at: new Date().toISOString(),
     reports: state.localReports
   };
@@ -368,17 +385,66 @@ els.clearButton.addEventListener('click', () => {
   state.localReports = [];
   saveLocalReports();
   renderBrand();
+  renderRecordPreview(null);
   els.formStatus.textContent = 'Local prototype submissions cleared.';
 });
 
+function resolveKnownFacility(value) {
+  if (!value) return null;
+  const normalized = value.toLowerCase();
+  return state.facilities.find((facility) =>
+    facility.id.toLowerCase() === normalized ||
+    String(facility.os_id ?? '').toLowerCase() === normalized
+  ) ?? null;
+}
+
+function renderRecordPreview(report) {
+  if (!els.recordPreview) return;
+  if (!report) {
+    els.recordPreview.textContent = 'No local report yet.';
+    return;
+  }
+
+  els.recordPreview.textContent = JSON.stringify(report, null, 2);
+}
+
 function loadLocalReports() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current) {
+      const parsed = JSON.parse(current);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!legacy) return [];
+    const parsedLegacy = JSON.parse(legacy);
+    if (!Array.isArray(parsedLegacy)) return [];
+
+    const migrated = parsedLegacy.map(migrateLegacyReport);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return [];
   }
+}
+
+function migrateLegacyReport(report) {
+  const rawFacility = String(report.facility_id ?? '').trim();
+  const looksCanonical = rawFacility.startsWith('osh-');
+  return {
+    schema_version: '0.2',
+    id: report.id ?? `legacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    brand_id: report.brand_id,
+    country: report.country,
+    facility_id: looksCanonical ? rawFacility : null,
+    facility_text: rawFacility && !looksCanonical ? rawFacility : null,
+    employment_type: report.employment_type,
+    weekly_hours_bucket: report.weekly_hours_bucket,
+    period_basis: PERIOD_BASIS,
+    submitted_at: report.observed_at ?? new Date().toISOString(),
+    source: 'local_prototype'
+  };
 }
 
 function saveLocalReports() {
