@@ -26,11 +26,11 @@
 
       <div class="search-row">
         <label class="sr-only" for="brand-search">Search a brand</label>
-        <input id="brand-search" list="brand-options" autocomplete="off" placeholder="Search Haier, IKEA, Toyota…" />
+        <input id="brand-search" list="brand-options" autocomplete="off" placeholder="Search Haier, IKEA, PUMA, Toyota…" />
         <datalist id="brand-options"></datalist>
         <button id="brand-search-button" type="button">View distribution</button>
       </div>
-      <p class="demo-notice">The catalog now contains a small real brand/owner seed. Bundled working-time observations remain fictional demo data only.</p>
+      <p class="demo-notice">The catalog contains a small real brand/owner seed and one evidence-backed production-location pilot. Bundled working-time observations remain fictional demo data only.</p>
     </section>
 
     <section class="panel" id="brand-panel" aria-live="polite">
@@ -57,6 +57,18 @@
 
       <div id="shape-note" class="shape-note" hidden></div>
       <p class="method-note">Buckets use reported average actual hours over the last four complete weeks. Bar length is relative to the largest bucket; labels show count and share.</p>
+
+      <div class="facility-block" id="facility-block">
+        <div class="facility-heading">
+          <div>
+            <span class="filter-label">Known production locations</span>
+            <strong><span id="facility-count">0</span> in current catalog</strong>
+          </div>
+          <span class="facility-scope">Evidence-backed links only</span>
+        </div>
+        <div id="facility-list" class="facility-list"></div>
+        <p class="method-note">This is not intended to be a complete supplier list. A listed location means the brand-to-facility relationship has a cited source; it does not imply any working-time claim.</p>
+      </div>
     </section>
 
     <section class="panel submit-panel">
@@ -83,8 +95,9 @@
 
           <label>
             <span>Production site (optional)</span>
-            <input id="report-facility" maxlength="120" placeholder="Factory name or future OS ID" />
-            <small>Facility catalog is intentionally empty in this phase.</small>
+            <input id="report-facility" list="facility-options" maxlength="200" placeholder="Select an OSH facility or type another site" />
+            <datalist id="facility-options"></datalist>
+            <small id="facility-hint">Known facilities will be suggested when available.</small>
           </label>
 
           <label>
@@ -118,7 +131,7 @@
       </article>
       <article>
         <h3>Keep entity facts separate from labor reports</h3>
-        <p>A real brand in the catalog is not a claim about its working conditions. Working-time evidence is a separate data layer.</p>
+        <p>A real brand or production location in the catalog is not a claim about its working conditions. Working-time evidence is a separate data layer.</p>
       </article>
     </section>
   </main>
@@ -129,5 +142,6 @@
   </footer>
 
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./facility.js"></script>
 </body>
 </html>
