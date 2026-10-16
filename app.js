@@ -410,7 +410,7 @@ els.reportForm.addEventListener('submit', (event) => {
   }
 
   const rawSubdivision = els.reportSubdivision?.value.trim().toUpperCase() ?? '';
-  const subdivisionCode = knownFacility?.subdivision_code ?? rawSubdivision || null;
+  const subdivisionCode = knownFacility?.subdivision_code ?? (rawSubdivision || null);
 
   if (subdivisionCode && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
     els.formStatus.textContent = 'Region must use an ISO 3166-2 code such as CN-SH, US-TX, or DE-BB.';
