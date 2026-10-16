@@ -1,220 +1,299 @@
 # Open Worktime
 
-Open Worktime is an open prototype for crowdsourcing **actual weekly working time** behind manufactured products and brands.
+> **How many hours do the people who make our products actually work?**
+>
+> 看看制造你所购买商品的人，每周实际工作多久。
 
-Live prototype: https://6jingyong.github.io/open-worktime/
+Open Worktime is an open public-interest project for making **actual weekly working-time evidence behind manufactured goods** easier to see, compare and audit.
 
-The project starts narrow:
+It is not an ESG score and it does not label a company “good” or “bad”. The core output is a distribution: how many workers report `<35`, `35–<40`, `40–<45` … `75+` hours per week, with sample size, geography, employment relationship, methodology and source provenance visible alongside it.
 
-- physical goods and manufacturing-oriented brands first;
-- no moral score or automatic "good/bad company" label;
-- publish weekly-hours distributions;
-- keep employment identity visible;
-- treat geography as optional context rather than an intake gate;
-- keep raw accepted observations separate from release-time manufacturing analysis;
-- keep entity metadata, regional context, and labor-condition observations separate.
+**Live prototype:** https://6jingyong.github.io/open-worktime/  
+**For researchers / NGOs / worker-data programs:** https://6jingyong.github.io/open-worktime/partners.html
 
-## What one contributor reports
+> **Current status:** the software and data pipeline work, but the project does not yet have a real bundled brand/factory worker-hours dataset. Finding the first strong research/data partner is now more important than adding another software feature.
 
-A v0.4 submission asks for:
+---
 
-1. brand;
-2. optional country / coarse work region / production site;
-3. employment relationship;
-4. broad work role;
-5. whether total compensation is roughly >=5x typical local full-time income (`yes / no / unknown`);
-6. average actual weekly working time over the last four complete weeks.
+## The idea in 30 seconds
 
-It deliberately does **not** ask for exact salary, exact job title, name, employee ID, home address, GPS coordinate, phone number, or personal email.
+We increasingly know **where** products are made. Public supply-chain projects can identify factories and brand relationships.
 
-### Employment types
+What is much harder for a consumer to see is:
 
-- Direct contract
-- Labor dispatch
-- Labor outsourcing
-- On-site after-sales / service
-- Other or unknown
+> **What does the actual weekly working-time distribution look like for the people making those products?**
 
-### Broad work roles
+Open Worktime tries to connect three layers without mixing them up:
 
-- Production / assembly
-- Manufacturing support (quality, equipment, warehouse, production support)
-- Management
-- Sales
-- Corporate / functional role
-- Other or unknown
+```text
+worker working-time evidence
+        ↓
+factory / region identity
+        ↓
+evidence-backed supply-chain links
+        ↓
+consumer-facing brand
+```
 
-### Weekly-hour buckets
+The project keeps uncertainty visible. A known factory is not automatically linked to a brand; a brand relationship needs evidence. A difference between regions is evidence to investigate, not automatic proof of discrimination or misconduct.
+
+---
+
+## What the public should eventually be able to see
+
+A useful real page might look conceptually like this:
+
+```text
+Brand: Example Brand
+Factory / region: Example production site · Country
+Sample: n = 112 manufacturing workers
+Measure: average actual weekly hours
+
+<35        3%
+35–<40     4%
+40–<45     8%
+45–<50    14%
+50–<55    21%
+55–<60    25%
+60–<65    15%
+65–<70     7%
+70–<75     2%
+75+         1%
+
+Source / methodology / survey period / employment mix: visible here
+```
+
+No single moral score is required for this to be useful.
+
+---
+
+## If you already have labor or worker-survey data
+
+**You do not need to learn GitHub or remodel your dataset to our schema.**
+
+A research partner can start with something as small as:
+
+- a questionnaire;
+- a data dictionary;
+- a list of column names;
+- a public report;
+- a safe factory-level aggregate table;
+- or a de-identified research extract.
+
+Open Worktime can take responsibility for the integration work: source-specific adapters, working-time normalization, provenance, factory/entity resolution and public visualization.
+
+Raw microdata does **not** need to become public. If required, a partner can keep all worker-level data internally and provide only:
+
+```text
+anonymous_factory_id | survey_round | weekly_hours_bucket | count
+```
+
+See:
+
+- [Research partner brief](docs/RESEARCH_PARTNERS.md)
+- [Public no-GitHub partner page](https://6jingyong.github.io/open-worktime/partners.html)
+- [Real-data acquisition strategy](docs/DATA_ACQUISITION.md)
+- [Better Work collaboration concept](docs/BETTER_WORK_COLLABORATION.md) — proposal draft, not a claim of partnership
+
+---
+
+## Privacy: what we do **not** need
+
+The public working-time model is deliberately low-information.
+
+We do not need:
+
+- worker names;
+- personal email addresses or phone numbers;
+- employee IDs;
+- exact salaries;
+- home addresses;
+- GPS traces;
+- unnecessary exact job titles;
+- free-text complaints tied to identifiable workers.
+
+For the native community intake, the project asks only for broad facts such as brand, optional coarse geography/site, employment relationship, broad role, a high-income relevance flag, and one weekly-hours bucket.
+
+The brandless fallback survey is even simpler: **work city × employment relationship × broad role × weekly-hours bucket**, with no employer required. See [Area survey pilot](docs/AREA_SURVEY_PILOT.md).
+
+---
+
+## The working-time measure
+
+The native Open Worktime community question is:
+
+> **Over the last four complete weeks, how many hours did you actually work per week on average?**
+
+The fixed public buckets are:
 
 `<35`, `35–<40`, `40–<45`, `45–<50`, `50–<55`, `55–<60`, `60–<65`, `65–<70`, `70–<75`, `75+`
 
-## Manufacturing relevance weighting
+External research does **not** have to use the same wording.
 
-The default consumer-facing view is intended to represent **ordinary manufacturing labor**, not every person who happens to work for a brand.
+A `typical week`, a `survey week`, an `annual mean` and a `contractual schedule` are different measures. The import layer preserves those differences instead of silently relabeling everything as the native Open Worktime metric.
 
-The current prototype role rule is explicit:
+Likewise:
+
+- a scalar mean is **not** converted into a histogram bucket;
+- an aggregate count is **not** expanded into synthetic workers;
+- schedule span is **not** called actual work time.
+
+---
+
+## Manufacturing relevance
+
+The consumer-facing default should represent **ordinary manufacturing labor**, not every employee who happens to work for a brand.
+
+Current broad-role weights are transparent and deliberately simple:
 
 | Broad role | Base weight |
 | --- | ---: |
 | Production / assembly | 1.0 |
-| Manufacturing support | 1.0 |
+| Manufacturing support (quality, equipment, warehouse, production support) | 1.0 |
 | Management | 0.25 |
 | Sales | 0 |
 | Corporate / functional role | 0 |
 | Other / unknown | 0.5 |
 
-If a contributor reports compensation roughly >=5x typical local full-time income, their weight is capped at `0.25`.
+If a contributor reports compensation roughly `≥5×` typical local full-time income, the weight is capped at `0.25`.
 
-Employment identity itself does **not** reduce weight, so labor dispatch and outsourced manufacturing remain visible.
+Employment identity itself does **not** reduce weight. Direct workers, labor-dispatch workers and outsourced manufacturing workers can all represent real manufacturing labor.
 
-## Optional geography, strict publication scope
+Geography is optional. Missing geography is not penalized. When a brand's manufacturing geography has been deliberately reviewed as complete for a release, a supplied location outside that scope can receive zero manufacturing weight while the raw observation remains intact.
 
-Geography is simple:
+See [Geography methodology](docs/GEOGRAPHY.md) and [`data/manufacturing-scope.json`](data/manufacturing-scope.json).
 
-- `country`: optional two-letter code such as `CN`, `US`, `DE`;
-- `work_region`: optional coarse label such as `Shanghai`, `Texas`, or `Berlin`;
-- known facilities may fill these automatically.
+---
 
-Missing geography is not penalized.
+## What already works
 
-The important distinction is publication-time manufacturing scope:
+The current prototype already has enough infrastructure to learn from real data:
 
-- `partial` brand scope can confirm known manufacturing locations but cannot exclude unlisted ones;
-- `curated_complete` brand scope is deliberately reviewed before a report release;
-- when a contributor supplies a location outside a `curated_complete` scope, that raw observation remains available but receives manufacturing weight `0` for that release.
+### Public/static layer
 
-This intentionally favors conservative publication. A later report can update the manufacturing-scope catalog and re-run the same historical raw observations.
-
-See [`data/manufacturing-scope.json`](data/manufacturing-scope.json), [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md), and [`docs/PUBLICATION_CYCLE.md`](docs/PUBLICATION_CYCLE.md).
-
-## External research imports
-
-Open Worktime has a staging-first import layer under [`imports/`](imports/) for existing surveys, historical community datasets, NGO research, and statistical datasets.
-
-External data is **not** forced into the same shape as a fresh community submission. The importer keeps source/provenance, reuse status, input hash, source record IDs, original time semantics, unresolved entities, and transformation issues.
-
-Three evidence shapes are supported:
-
-- `individual` — one source row represents one observation/person;
-- `aggregate` — one source row represents a distribution cell with a `count`;
-- `aggregate_statistic` — one source row represents a scalar statistic such as mean weekly hours.
-
-A scalar mean is never converted into a histogram bucket, and an aggregate count is never expanded into synthetic workers. Only a sufficiently complete individual record using the project's four-complete-week definition can become a `canonical_candidate`; other evidence remains contextual.
-
-The manifest mapping is a field whitelist, so unmapped source columns are discarded rather than copied wholesale. Source-specific adapters currently cover ILOSTAT statistical data and restricted-use WorkingTime schedule data. See [`imports/README.md`](imports/README.md).
-
-## Country context baseline
-
-The first checked-in real worktime-related dataset is [`data/country-context.json`](data/country-context.json): a deliberately small 2025 country snapshot based on **ILO ILOSTAT modelled estimates** for average weekly hours actually worked per employed person.
-
-This is broad labor-market context, not manufacturing-worker evidence:
-
-- population = all employed persons;
-- statistic = scalar country mean;
-- it never contributes to brand/facility histograms;
-- it never changes manufacturing-relevance weights;
-- it may be shown even when Open Worktime has zero community reports for that country.
-
-The Region explorer presents the country mean in a separate context card. See [`docs/CONTEXT_BASELINES.md`](docs/CONTEXT_BASELINES.md) and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
-
-## Batch publication model
-
-Open Worktime does not need to publish every submission as an authoritative statistic in real time.
-
-A nonprofit or community operator can publish monthly, quarterly, or on another explicit cadence:
-
-1. collect raw observations continuously;
-2. review pending reports for spam / duplicate / malformed / privacy-risk cases;
-3. freeze a report cutoff and export accepted raw observations;
-4. refresh brand manufacturing countries / regions / facilities;
-5. freeze a versioned `scope_version`;
-6. derive manufacturing weights from that frozen scope and methodology;
-7. publish raw sample counts plus weighted histograms.
-
-Raw observations are not rewritten when the scope database improves.
-
-## Current prototype
-
-The dependency-free GitHub Pages client includes:
-
-- a small real brand / owner seed;
-- one evidence-backed production-location pilot;
-- a small real ILO country working-time context snapshot;
+- real brand / owner seed;
+- an evidence-backed Open Supply Hub production-location pilot;
 - brand search;
 - weekly-hours histograms;
-- employment filters;
-- optional geography filters and a region explorer;
+- employment and optional geography filters;
+- region explorer;
 - manufacturing-weighted vs all-raw views;
-- broad-role and high-income relevance collection;
-- browser-local raw observation storage and JSON export;
-- a versioned manufacturing-scope catalog;
-- release-time analysis generated separately from raw reports.
+- a real ILO country working-time context snapshot kept separate from worker histograms.
 
-The repository also contains a **disabled-by-default anonymous intake backend** under [`backend/`](backend/):
+### External research layer
 
-- Cloudflare Worker endpoint `POST /v1/reports`;
-- strict v0.4 server-side validation;
-- D1 migration for private pending-report storage;
-- server-assigned receipt ID and receipt time;
-- no public report-reading endpoint;
-- no IP column and no release-time weight stored in the intake table;
-- local/remote operator CLI for pending review, moderation-state counts, accepted/rejected transitions, accepted-raw export, and private D1 backup;
-- moderation reasons intentionally limited to abuse/data-quality cases rather than manufacturing-relevance judgments;
-- unit tests that run without a Cloudflare account.
+- provenance-preserving import manifests;
+- source/input hashing;
+- individual observations;
+- aggregate distribution cells;
+- scalar aggregate statistics;
+- explicit reuse / permission status;
+- source-specific adapters for ILOSTAT and restricted-use WorkingTime-style schedule data;
+- unresolved entity names can remain unresolved instead of being guessed.
 
-`backend/wrangler.jsonc` ships with `WRITE_ENABLED = false` and no D1 binding. Merging the backend code therefore does **not** start collecting real worker data. See [`backend/README.md`](backend/README.md).
+### Community / operator layer
 
-The repository still contains **no real bundled brand/facility worker observations**. Real brands remain entity metadata only; bundled histograms and import fixtures are fictional. The ILO country snapshot is real aggregate context and is deliberately kept outside those worker distributions.
+- privacy-minimal submission contracts;
+- browser-local prototype intake;
+- disabled-by-default Cloudflare Worker + D1 backend;
+- pending / accepted / rejected moderation states;
+- accepted raw export;
+- private backup tooling;
+- release-time analysis kept separate from raw worker facts.
 
-## Data contracts
+Public writes remain disabled by default. Merging the backend does not silently start collecting worker data.
 
-The client submits facts only:
+---
 
-```json
-{
-  "schema_version": "0.4",
-  "brand_id": "bt-puma",
-  "country": "CN",
-  "work_region": "Jiangsu",
-  "facility_id": "osh-CN2021159RK49KG",
-  "facility_text": null,
-  "employment_type": "labor_dispatch",
-  "work_role": "manufacturing_frontline",
-  "high_income_5x": "no",
-  "weekly_hours_bucket": "55_60",
-  "period_basis": "last_4_complete_weeks"
-}
+## Real external data currently included
+
+### ILO country context
+
+[`data/country-context.json`](data/country-context.json) contains a small real 2025 ILOSTAT modelled-estimate snapshot for **average weekly hours actually worked per employed person**.
+
+It is intentionally shown as broad country context only:
+
+- population = all employed persons;
+- measure = scalar country mean;
+- it never enters a worker histogram;
+- it never changes manufacturing relevance weights.
+
+See [Country context baseline](docs/CONTEXT_BASELINES.md) and [data attribution](data/ATTRIBUTION.md).
+
+### Real brand/factory worker observations
+
+**None are bundled yet.**
+
+That is the current bottleneck and the reason the project is prioritizing data partnerships and carefully licensed external research over additional infrastructure.
+
+---
+
+## Current data-acquisition priorities
+
+1. **Research partnerships / existing microdata** — highest priority.
+2. **Factory-level aggregate distributions** when microdata cannot be shared.
+3. **Entity resolution** from source factory IDs/names → public facility → evidence-backed brand relationships.
+4. **Brandless city survey fallback** if external access is slow, so the real collection pipeline can still be tested.
+
+Better Work is currently the highest-value research target because public Better Work materials describe worker weekly-hours microdata and stable factory identifiers across research programs. The project has prepared a low-burden collaboration concept, but no partnership is claimed and no outreach should be sent until the public-facing materials are ready.
+
+See [Data acquisition strategy](docs/DATA_ACQUISITION.md).
+
+---
+
+## Architecture, briefly
+
+The important separation is conceptual, not technological:
+
+```text
+EXTERNAL ENTITY DATA
+brands / companies / facilities / supply-chain evidence
+
+WORKER OR RESEARCH EVIDENCE
+raw facts, source semantics, provenance, permission
+
+PRIVATE INTAKE / MODERATION
+anti-abuse and operational state kept out of public observations
+
+RELEASE ANALYSIS
+manufacturing relevance + frozen scope/version
+
+PUBLIC OUTPUT
+histograms, sample sizes, geography, provenance, context
 ```
 
-The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label. New submissions first enter private storage as `pending`.
+This lets the project improve factory mappings or manufacturing scope later without rewriting the original worker evidence.
 
-Moderation decides only whether a raw observation is usable/abusive. It does not decide manufacturing relevance. Accepted raw observations can then be exported at a fixed cutoff without private moderation fields.
+For technical details see:
 
-A later report build derives a separate record containing:
+- [Architecture](docs/ARCHITECTURE.md)
+- [Community intake](docs/COMMUNITY_INTAKE.md)
+- [Moderation](docs/MODERATION.md)
+- [External imports](imports/README.md)
+- [Publication cycle](docs/PUBLICATION_CYCLE.md)
+- schemas under [`schema/`](schema/)
 
-- `report_id`;
-- `methodology_version`;
-- `scope_version`;
-- `analysis_weight`;
-- public `analysis_flags` explaining that weight.
+---
 
-This keeps worker facts stable while allowing later report releases to improve the manufacturing-footprint database.
+## Data and software licensing
 
-See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`schema/release-analysis.schema.json`](schema/release-analysis.schema.json), [`schema/external-import-manifest.schema.json`](schema/external-import-manifest.schema.json), and [`schema/external-evidence.schema.json`](schema/external-evidence.schema.json).
+Code and data licenses are intentionally separate.
 
-## Licensing
-
-- **source code:** MIT;
-- **selected Brandtree-derived brand/company seed:** CC BY 4.0;
-- **Open Supply Hub-derived facility data and facility-link material:** CC BY-SA 4.0;
+- **software:** MIT;
+- **Brandtree-derived entity seed:** CC BY 4.0;
+- **Open Supply Hub-derived facility/link material:** CC BY-SA 4.0;
 - **ILO country context snapshot:** CC BY 4.0;
-- **fictional demo entities, demo distributions, and import fixtures:** CC0 1.0;
-- **future real community working-time dataset:** not chosen yet;
-- **external research imports:** retain their own per-source license / permission metadata and are not assumed redistributable merely because they are technically accessible.
+- **fictional demo material / import fixtures:** CC0 1.0;
+- **future community worker observations:** license not chosen yet;
+- **external research:** retains source-specific permission/license terms and is never assumed redistributable merely because it is technically accessible.
 
-See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md) and [`imports/README.md`](imports/README.md).
+See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
-## Run the static prototype locally
+---
+
+## Run locally
+
+The public prototype is dependency-free:
 
 ```bash
 python -m http.server 8000
@@ -222,6 +301,19 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Status
+The repository also contains Node-based import tools and a disabled-by-default Cloudflare backend; those are optional for simply viewing the site.
 
-Prototype / pre-community-data. Intake, private moderation, accepted-raw export, private backup, external-data staging/adapters, and the first openly licensed country context snapshot now exist. Public writes remain intentionally disabled. The next useful data work is additional openly reusable brand/company/facility-level historical evidence and entity resolution, not a publication scheduler.
+---
+
+## What not to build next
+
+Until the project obtains at least one real manufacturing-worker dataset, these are deliberately **not** the main priority:
+
+- publication schedulers;
+- large factory-catalog bulk imports with no worker evidence;
+- complex dashboards/admin panels;
+- IPFS/Torrent distribution;
+- sophisticated significance machinery;
+- additional fictional demo datasets.
+
+The project has enough infrastructure. The next breakthrough should come from **real evidence**.

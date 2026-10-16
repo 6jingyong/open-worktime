@@ -71,6 +71,13 @@ footer {
 }
 
 .badge-muted { color: var(--muted); }
+.partner-badge {
+  text-decoration: none;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
+  font-weight: 800;
+}
 
 .hero {
   padding: 72px 0 56px;
@@ -174,6 +181,37 @@ small,
 .demo-notice {
   margin: 10px 0 0;
   font-size: 0.86rem;
+}
+
+.partner-callout {
+  margin-top: 18px;
+  max-width: 840px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--accent-soft);
+}
+
+.partner-callout div {
+  display: grid;
+  gap: 3px;
+}
+
+.partner-callout span {
+  color: #3e5b4d;
+  font-size: 0.86rem;
+}
+
+.partner-callout a {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 0.88rem;
 }
 
 .panel {
@@ -337,6 +375,12 @@ footer {
   font-size: 0.86rem;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -358,5 +402,7 @@ footer {
   .panel-heading { flex-direction: column; }
   .sample-card { text-align: left; width: 100%; }
   .hist-row { grid-template-columns: 62px minmax(0, 1fr) 74px; gap: 8px; }
+  .partner-callout { align-items: flex-start; flex-direction: column; }
+  .header-badges .badge-muted { display: none; }
   footer { align-items: flex-start; flex-direction: column; justify-content: center; padding: 20px 0; }
 }

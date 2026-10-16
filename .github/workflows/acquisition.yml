@@ -70,6 +70,41 @@ jobs:
               assert phrase.lower() in docs
           PY
 
+      - name: Guard partner-facing collaboration promises
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          partner_html = Path('partners.html').read_text().lower()
+          partner_brief = Path('docs/RESEARCH_PARTNERS.md').read_text().lower()
+          better_work = Path('docs/BETTER_WORK_COLLABORATION.md').read_text().lower()
+          readme = Path('README.md').read_text().lower()
+
+          for path in [
+              'partners.html',
+              'partner.css',
+              'docs/RESEARCH_PARTNERS.md',
+              'docs/BETTER_WORK_COLLABORATION.md',
+              'docs/examples/partner-aggregate-example.csv'
+          ]:
+              assert Path(path).stat().st_size > 0, f'missing partner package file: {path}'
+
+          assert 'no github knowledge is required' in partner_html
+          assert 'raw microdata' in partner_html
+          assert (
+              'partner keeps raw microdata' in partner_brief
+              and 'approved aggregates' in partner_brief
+          ), 'partner brief must preserve an aggregate-only option with raw microdata retained by the partner'
+          assert 'safe aggregates' in partner_html
+          assert 'proposal draft' in better_work and 'not a claim of partnership' in better_work
+          assert 'research partner brief' in readme
+          assert 'partners.html' in readme
+
+          csv = Path('docs/examples/partner-aggregate-example.csv').read_text().strip().splitlines()
+          assert csv[0] == 'anonymous_factory_id,survey_round,weekly_hours_bucket,count'
+          assert len(csv) > 2
+          PY
+
       - name: Check acquisition docs
         run: |
           test -s docs/DATA_ACQUISITION.md
