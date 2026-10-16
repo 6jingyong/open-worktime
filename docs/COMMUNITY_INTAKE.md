@@ -35,9 +35,36 @@ The browser sends facts only:
 
 The client cannot choose report ID, receipt time, source label, analysis weight, or analysis flags.
 
+## Intake and pending storage
+
+`backend/` now contains a disabled-by-default implementation of:
+
+```text
+POST /v1/reports
+Content-Type: application/json
+```
+
+The intake Worker:
+
+1. rejects payloads that do not match the v0.4 field set;
+2. normalizes small formatting differences such as a lowercase country code;
+3. rejects client-supplied extra fields such as `analysis_weight`;
+4. assigns an opaque receipt/report ID;
+5. assigns the authoritative server receipt time;
+6. stores the raw observation with `source = community_report` and `moderation_state = pending`;
+7. returns receipt metadata only.
+
+The D1 intake schema does not contain an IP-address column and does not contain release-time weight fields.
+
+There is intentionally no public report-reading endpoint in the intake Worker.
+
+The checked-in Worker configuration has `WRITE_ENABLED = false` and no production D1 binding, so the backend code is not an active collection service merely because it is merged or deployed.
+
+See [`../backend/README.md`](../backend/README.md).
+
 ## Accepted raw observation
 
-After validation the intake system may publish the worker-supplied facts plus receipt metadata:
+After moderation, an accepted observation may publish the worker-supplied facts plus receipt metadata:
 
 ```json
 {
@@ -126,9 +153,9 @@ The public/core record does not need:
 - written narrative;
 - uploaded documents.
 
-## Private intake metadata
+## Private operational metadata
 
-A real backend may still need restricted data for:
+A real public launch may still need restricted data or transient signals for:
 
 - rate limiting;
 - abuse resistance;
@@ -136,32 +163,21 @@ A real backend may still need restricted data for:
 - optional employment verification;
 - receipt tracking.
 
-Those fields belong to a private intake layer and must not leak into public exports.
+Those signals belong to a private intake layer and must not leak into public exports. Their retention should be explicitly documented before collection begins.
 
-## Backend outline
+The current D1 migration stores only the report facts, server receipt metadata, and moderation state.
 
-```text
-POST /v1/reports
-Content-Type: application/json
-```
+## Before real activation
 
-The intake server should:
+The backend skeleton is not yet a complete public launch because anonymous write abuse still needs an operational policy.
 
-1. validate `schema/submission.schema.json`;
-2. resolve known entities when possible;
-3. accept missing or unresolved geography rather than inventing facts;
-4. apply private rate-limit / abuse checks;
-5. assign opaque ID, receipt time, and source;
-6. move the report through pending / accepted / rejected moderation;
-7. store the accepted raw observation without permanently attaching a manufacturing weight.
+Before changing `WRITE_ENABLED` to `true`, the operator should have:
 
-The publication pipeline later:
-
-1. freezes a cutoff;
-2. refreshes and freezes `data/manufacturing-scope.json`;
-3. applies the current methodology;
-4. produces `schema/release-analysis.schema.json` records;
-5. builds the public weighted histograms.
+1. an abuse / bot-control mechanism;
+2. a moderation process for `pending → accepted / rejected`;
+3. backup/export procedures;
+4. retention rules for any future private operational metadata;
+5. minimum publication thresholds for small slices.
 
 ## Publication privacy
 
@@ -171,4 +187,6 @@ The raw accepted dataset may therefore contain information that the public UI ch
 
 ## Current implementation
 
-The GitHub Pages prototype stores raw reports only in browser `localStorage`. The current weighting view is recomputed from those raw reports using the checked-in manufacturing-scope catalog, and JSON export includes the raw reports plus a separate release-analysis projection.
+The GitHub Pages prototype still stores browser demo reports only in `localStorage` and does **not** call the Worker yet.
+
+The repository now separately contains a tested intake Worker and D1 schema, but production writes remain disabled. This lets the API contract and storage boundary stabilize before any real employee data is collected.
