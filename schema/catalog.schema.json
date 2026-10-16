@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime entity catalog",
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "record_id", "url", "license"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "record_id": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "license": { "type": "string", "minLength": 1 },
+        "verified_at": { "type": ["string", "null"], "format": "date" }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "aliases", "sector", "home_country", "origin_country", "owner_company_id", "demo"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "aliases": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "sector": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "home_country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "origin_country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "owner_company_id": { "type": ["string", "null"], "maxLength": 160 },
+        "demo": { "type": "boolean" },
+        "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "company": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "short_name", "type", "hq_country", "hq_city", "website", "source"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "short_name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "hq_country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "hq_city": { "type": ["string", "null"], "maxLength": 160 },
+        "website": { "type": ["string", "null"], "format": "uri" },
+        "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "facility": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "name", "country"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "source": { "$ref": "#/$defs/source" }
+      }
+    }
+  }
+}

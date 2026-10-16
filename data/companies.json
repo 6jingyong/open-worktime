@@ -1,0 +1,66 @@
+[
+  {
+    "id": "bt-haier-smart-home",
+    "name": "Haier Smart Home Co., Ltd.",
+    "short_name": "Haier",
+    "type": "public",
+    "hq_country": "CN",
+    "hq_city": "Qingdao",
+    "website": "https://smart-home.haier.com",
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "haier-smart-home",
+      "url": "https://brandtree.org/data",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-midea-group",
+    "name": "Midea Group Co., Ltd.",
+    "short_name": "Midea",
+    "type": "public",
+    "hq_country": "CN",
+    "hq_city": "Foshan",
+    "website": "https://www.midea.com",
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "midea-group",
+      "url": "https://brandtree.org/company/midea-group",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-ingka-ikea",
+    "name": "Inter IKEA Group",
+    "short_name": "Inter IKEA",
+    "type": "trust",
+    "hq_country": "NL",
+    "hq_city": "Delft",
+    "website": "https://www.inter.ikea.com",
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "ingka-ikea",
+      "url": "https://brandtree.org/brand/ikea",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-toyota-motor",
+    "name": "Toyota Motor Corporation",
+    "short_name": "Toyota",
+    "type": "public",
+    "hq_country": "JP",
+    "hq_city": "Toyota City",
+    "website": "https://global.toyota",
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "toyota",
+      "url": "https://brandtree.org/company/toyota",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  }
+]

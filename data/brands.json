@@ -2,29 +2,177 @@
   {
     "id": "demo-atlas-electronics",
     "name": "Atlas Electronics",
+    "aliases": [],
     "sector": "Consumer electronics",
     "home_country": "SG",
+    "origin_country": "SG",
+    "owner_company_id": null,
     "demo": true
   },
   {
     "id": "demo-northstar-appliances",
     "name": "Northstar Appliances",
+    "aliases": [],
     "sector": "Home appliances",
     "home_country": "DE",
+    "origin_country": "DE",
+    "owner_company_id": null,
     "demo": true
   },
   {
     "id": "demo-horizon-tools",
     "name": "Horizon Tools",
+    "aliases": [],
     "sector": "Power tools",
     "home_country": "US",
+    "origin_country": "US",
+    "owner_company_id": null,
     "demo": true
   },
   {
     "id": "demo-riverlight-mobility",
     "name": "Riverlight Mobility",
+    "aliases": [],
     "sector": "Electric mobility",
     "home_country": "CN",
+    "origin_country": "CN",
+    "owner_company_id": null,
     "demo": true
+  },
+  {
+    "id": "bt-haier",
+    "name": "Haier",
+    "aliases": [],
+    "sector": "Home appliances",
+    "home_country": "CN",
+    "origin_country": "CN",
+    "owner_company_id": "bt-haier-smart-home",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "haier",
+      "url": "https://brandtree.org/brand/haier",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-candy-appliances",
+    "name": "Candy",
+    "aliases": ["Candy Appliances"],
+    "sector": "Home appliances",
+    "home_country": "CN",
+    "origin_country": "IT",
+    "owner_company_id": "bt-haier-smart-home",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "candy-appliances",
+      "url": "https://brandtree.org/brand/candy-appliances",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-aqua-appliances",
+    "name": "AQUA",
+    "aliases": ["Aqua Appliances"],
+    "sector": "Home appliances",
+    "home_country": "CN",
+    "origin_country": "JP",
+    "owner_company_id": "bt-haier-smart-home",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "aqua-appliances",
+      "url": "https://brandtree.org/brand/aqua-appliances",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-casarte",
+    "name": "Casarte",
+    "aliases": [],
+    "sector": "Home appliances",
+    "home_country": "CN",
+    "origin_country": "CN",
+    "owner_company_id": "bt-haier-smart-home",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "casarte",
+      "url": "https://brandtree.org/brand/casarte",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-comfee",
+    "name": "Comfee",
+    "aliases": [],
+    "sector": "Home appliances",
+    "home_country": "CN",
+    "origin_country": "CN",
+    "owner_company_id": "bt-midea-group",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "comfee",
+      "url": "https://brandtree.org/brand/comfee",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-ikea",
+    "name": "IKEA",
+    "aliases": [],
+    "sector": "Furniture and home goods",
+    "home_country": "NL",
+    "origin_country": "SE",
+    "owner_company_id": "bt-ingka-ikea",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "ikea",
+      "url": "https://brandtree.org/brand/ikea",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-toyota",
+    "name": "Toyota",
+    "aliases": [],
+    "sector": "Automotive",
+    "home_country": "JP",
+    "origin_country": "JP",
+    "owner_company_id": "bt-toyota-motor",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "toyota",
+      "url": "https://brandtree.org/company/toyota",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
+  },
+  {
+    "id": "bt-lexus",
+    "name": "Lexus",
+    "aliases": [],
+    "sector": "Automotive",
+    "home_country": "JP",
+    "origin_country": "JP",
+    "owner_company_id": "bt-toyota-motor",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "lexus",
+      "url": "https://brandtree.org/brand/lexus",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
   }
 ]

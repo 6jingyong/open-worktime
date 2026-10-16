@@ -23,6 +23,7 @@ const STORAGE_KEY = 'open-worktime-local-reports-v0.1';
 
 const state = {
   brands: [],
+  companies: [],
   demoDistribution: [],
   localReports: loadLocalReports(),
   selectedBrandId: null,
@@ -35,6 +36,7 @@ const els = {
   brandOptions: document.querySelector('#brand-options'),
   brandName: document.querySelector('#brand-name'),
   brandMeta: document.querySelector('#brand-meta'),
+  brandSource: document.querySelector('#brand-source'),
   sampleCount: document.querySelector('#sample-count'),
   employmentFilters: document.querySelector('#employment-filters'),
   histogram: document.querySelector('#histogram'),
@@ -54,26 +56,26 @@ boot();
 
 async function boot() {
   try {
-    const [brandsResponse, distributionResponse] = await Promise.all([
+    const [brandsResponse, companiesResponse, distributionResponse] = await Promise.all([
       fetch('./data/brands.json'),
+      fetch('./data/companies.json'),
       fetch('./data/demo-distribution.json')
     ]);
 
-    if (!brandsResponse.ok || !distributionResponse.ok) {
+    if (!brandsResponse.ok || !companiesResponse.ok || !distributionResponse.ok) {
       throw new Error('Failed to load prototype data.');
     }
 
     state.brands = await brandsResponse.json();
+    state.companies = await companiesResponse.json();
     state.demoDistribution = await distributionResponse.json();
-    state.selectedBrandId = state.brands[0]?.id ?? null;
+    state.selectedBrandId = state.brands.find((brand) => brand.demo)?.id ?? state.brands[0]?.id ?? null;
 
     populateBrandControls();
     populateEmploymentControls();
     populateHourControls();
 
-    if (state.selectedBrandId) {
-      selectBrand(state.selectedBrandId);
-    }
+    if (state.selectedBrandId) selectBrand(state.selectedBrandId);
   } catch (error) {
     els.brandName.textContent = 'Prototype data failed to load';
     els.brandMeta.textContent = 'Serve this repository over HTTP instead of opening index.html directly from the file system.';
@@ -82,12 +84,21 @@ async function boot() {
 }
 
 function populateBrandControls() {
-  els.brandOptions.innerHTML = state.brands
-    .map((brand) => `<option value="${escapeHtml(brand.name)}"></option>`)
+  const sorted = [...state.brands].sort((a, b) => {
+    if (a.demo !== b.demo) return Number(a.demo) - Number(b.demo);
+    return a.name.localeCompare(b.name);
+  });
+
+  els.brandOptions.innerHTML = sorted
+    .map((brand) => {
+      const owner = getOwner(brand);
+      const hint = brand.demo ? 'fictional demo' : owner?.short_name ?? owner?.name ?? brand.origin_country;
+      return `<option value="${escapeHtml(brand.name)}" label="${escapeHtml(hint)}"></option>`;
+    })
     .join('');
 
-  els.reportBrand.innerHTML = state.brands
-    .map((brand) => `<option value="${brand.id}">${escapeHtml(brand.name)}</option>`)
+  els.reportBrand.innerHTML = sorted
+    .map((brand) => `<option value="${escapeHtml(brand.id)}">${escapeHtml(brand.name)}${brand.demo ? ' · demo' : ''}</option>`)
     .join('');
 }
 
@@ -95,7 +106,6 @@ function populateEmploymentControls() {
   els.reportEmployment.innerHTML = EMPLOYMENT_TYPES
     .map((type) => `<option value="${type.id}">${type.label} · ${type.zh}</option>`)
     .join('');
-
   renderEmploymentFilters();
 }
 
@@ -112,7 +122,6 @@ function renderEmploymentFilters() {
   ];
 
   els.employmentFilters.innerHTML = '';
-
   for (const filter of filters) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -144,20 +153,45 @@ function renderBrand() {
   const brand = state.brands.find((item) => item.id === state.selectedBrandId);
   if (!brand) return;
 
+  const owner = getOwner(brand);
   const counts = aggregateCounts(brand.id, state.employmentFilter);
   const total = counts.reduce((sum, value) => sum + value, 0);
   const maxCount = Math.max(1, ...counts);
 
   els.brandName.textContent = brand.name;
-  els.brandMeta.textContent = `${brand.sector} · ${brand.home_country} · fictional demo entity`;
   els.sampleCount.textContent = total.toLocaleString();
 
+  if (brand.demo) {
+    els.brandMeta.textContent = `${brand.sector} · ${brand.home_country} · fictional demo entity`;
+    setBrandSource(null, 'Fictional demo entity. No real-world claim.');
+  } else {
+    const ownerText = owner ? `${owner.short_name} (${owner.hq_country})` : 'owner not resolved';
+    els.brandMeta.textContent = `${brand.sector} · origin ${brand.origin_country} · current owner ${ownerText}`;
+    setBrandSource(
+      brand.source?.url ?? null,
+      `Entity metadata: ${brand.source?.provider ?? 'external catalog'} · ${brand.source?.license ?? 'source license'}${brand.source?.verified_at ? ` · verified ${brand.source.verified_at}` : ''}`
+    );
+  }
+
   els.histogram.innerHTML = '';
+  els.shapeNote.hidden = true;
+  els.shapeNote.textContent = '';
+
+  if (total === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-chart';
+    empty.innerHTML = `
+      <strong>No working-time observations yet.</strong>
+      <span>${brand.demo ? 'This demo entity has no observations under the current filter.' : 'The entity metadata above is real catalog data; Open Worktime currently bundles no labor-condition claim for this brand.'}</span>
+    `;
+    els.histogram.appendChild(empty);
+    return;
+  }
 
   HOURS_BUCKETS.forEach((bucket, index) => {
     const count = counts[index];
-    const share = total > 0 ? (count / total) * 100 : 0;
-    const relativeWidth = total > 0 ? (count / maxCount) * 100 : 0;
+    const share = (count / total) * 100;
+    const relativeWidth = (count / maxCount) * 100;
 
     const row = document.createElement('div');
     row.className = 'hist-row';
@@ -175,10 +209,28 @@ function renderBrand() {
   if (shapeWarning) {
     els.shapeNote.hidden = false;
     els.shapeNote.textContent = shapeWarning;
-  } else {
-    els.shapeNote.hidden = true;
-    els.shapeNote.textContent = '';
   }
+}
+
+function setBrandSource(url, text) {
+  if (!els.brandSource) return;
+  els.brandSource.textContent = '';
+  if (!url) {
+    els.brandSource.textContent = text;
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noreferrer';
+  link.textContent = text;
+  els.brandSource.appendChild(link);
+}
+
+function getOwner(brand) {
+  if (!brand?.owner_company_id) return null;
+  return state.companies.find((company) => company.id === brand.owner_company_id) ?? null;
 }
 
 function aggregateCounts(brandId, employmentFilter) {
@@ -210,9 +262,7 @@ function detectSeparatedPeaks(counts) {
     const left = i === 0 ? -1 : counts[i - 1];
     const right = i === counts.length - 1 ? -1 : counts[i + 1];
     const share = counts[i] / total;
-    if (counts[i] > left && counts[i] >= right && share >= 0.14) {
-      peaks.push(i);
-    }
+    if (counts[i] > left && counts[i] >= right && share >= 0.14) peaks.push(i);
   }
 
   for (let a = 0; a < peaks.length; a += 1) {
@@ -232,18 +282,28 @@ function detectSeparatedPeaks(counts) {
   return null;
 }
 
+function brandSearchText(brand) {
+  const owner = getOwner(brand);
+  return [
+    brand.name,
+    ...(brand.aliases ?? []),
+    owner?.name,
+    owner?.short_name
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
 function handleBrandSearch() {
   const query = els.brandSearch.value.trim().toLowerCase();
   if (!query) return;
 
-  const exact = state.brands.find((brand) => brand.name.toLowerCase() === query);
-  const partial = state.brands.find((brand) => brand.name.toLowerCase().includes(query));
+  const exact = state.brands.find((brand) => brand.name.toLowerCase() === query || (brand.aliases ?? []).some((alias) => alias.toLowerCase() === query));
+  const partial = state.brands.find((brand) => brandSearchText(brand).includes(query));
   const match = exact ?? partial;
 
   if (match) {
     selectBrand(match.id);
   } else {
-    els.brandSearch.setCustomValidity('No demo brand matched that search.');
+    els.brandSearch.setCustomValidity('No catalog brand matched that search.');
     els.brandSearch.reportValidity();
     setTimeout(() => els.brandSearch.setCustomValidity(''), 0);
   }

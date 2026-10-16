@@ -6,6 +6,7 @@
   <meta name="description" content="Open Worktime — crowdsourced actual weekly working time behind manufactured products and brands." />
   <title>Open Worktime</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./entity.css" />
 </head>
 <body>
   <header class="site-header">
@@ -25,11 +26,11 @@
 
       <div class="search-row">
         <label class="sr-only" for="brand-search">Search a brand</label>
-        <input id="brand-search" list="brand-options" autocomplete="off" placeholder="Search a demo brand…" />
+        <input id="brand-search" list="brand-options" autocomplete="off" placeholder="Search Haier, IKEA, Toyota…" />
         <datalist id="brand-options"></datalist>
         <button id="brand-search-button" type="button">View distribution</button>
       </div>
-      <p class="demo-notice">Demo only — all bundled observations and brands are fictional.</p>
+      <p class="demo-notice">The catalog now contains a small real brand/owner seed. Bundled working-time observations remain fictional demo data only.</p>
     </section>
 
     <section class="panel" id="brand-panel" aria-live="polite">
@@ -38,6 +39,7 @@
           <p class="eyebrow">Reported actual working time</p>
           <h2 id="brand-name">Loading…</h2>
           <p id="brand-meta" class="muted"></p>
+          <p id="brand-source" class="source-note"></p>
         </div>
         <div class="sample-card">
           <span class="sample-label">Sample</span>
@@ -81,7 +83,8 @@
 
           <label>
             <span>Production site (optional)</span>
-            <input id="report-facility" maxlength="120" placeholder="Factory or site name / ID" />
+            <input id="report-facility" maxlength="120" placeholder="Factory name or future OS ID" />
+            <small>Facility catalog is intentionally empty in this phase.</small>
           </label>
 
           <label>
@@ -114,14 +117,14 @@
         <p>Direct employment is not the only relevant relationship. Dispatch, outsourcing, and on-site service remain visible.</p>
       </article>
       <article>
-        <h3>Make the dataset portable</h3>
-        <p>The website is an interface, not the only copy. Future accepted data should be exportable, signed, mirrored, and P2P-friendly.</p>
+        <h3>Keep entity facts separate from labor reports</h3>
+        <p>A real brand in the catalog is not a claim about its working conditions. Working-time evidence is a separate data layer.</p>
       </article>
     </section>
   </main>
 
   <footer>
-    <span>Open Worktime · MIT code · prototype data only</span>
+    <span>Open Worktime · MIT code · mixed-license entity data · no real bundled worktime reports</span>
     <a href="https://github.com/6jingyong/open-worktime">GitHub</a>
   </footer>
 
