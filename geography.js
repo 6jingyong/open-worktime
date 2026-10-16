@@ -1,3 +1,5 @@
+import { deriveManufacturingAnalysis } from './analysis.js';
+
 const GEO_HOURS_BUCKETS = [
   { id: 'lt_35', label: '<35' },
   { id: '35_40', label: '35–<40' },
@@ -24,6 +26,8 @@ const GEO_STORAGE_KEY = 'open-worktime-local-reports-v0.4';
 
 const geoState = {
   facilities: [],
+  facilityLinks: [],
+  manufacturingScope: null,
   selectedRegion: null,
   employmentFilter: 'all',
   analysisMode: 'weighted'
@@ -46,9 +50,18 @@ async function bootRegionExplorer() {
   if (!geoEls.regionSelect || !geoEls.histogram) return;
 
   try {
-    const response = await fetch('./data/facilities.json');
-    if (!response.ok) throw new Error('Failed to load facility geography.');
-    geoState.facilities = await response.json();
+    const [facilitiesResponse, linksResponse, scopeResponse] = await Promise.all([
+      fetch('./data/facilities.json'),
+      fetch('./data/facility-links.json'),
+      fetch('./data/manufacturing-scope.json')
+    ]);
+    if (![facilitiesResponse, linksResponse, scopeResponse].every((response) => response.ok)) {
+      throw new Error('Failed to load regional analysis metadata.');
+    }
+
+    geoState.facilities = await facilitiesResponse.json();
+    geoState.facilityLinks = await linksResponse.json();
+    geoState.manufacturingScope = await scopeResponse.json();
 
     geoEls.employmentSelect.innerHTML = GEO_EMPLOYMENT_TYPES
       .map((item) => `<option value="${item.id}">${item.label}</option>`)
@@ -79,6 +92,14 @@ async function bootRegionExplorer() {
     geoEls.histogram.innerHTML = '<div class="empty-chart"><strong>Regional explorer failed to load.</strong></div>';
     console.error(error);
   }
+}
+
+function analysisContext() {
+  return {
+    facilities: geoState.facilities,
+    facilityLinks: geoState.facilityLinks,
+    scopeCatalog: geoState.manufacturingScope
+  };
 }
 
 function refreshRegionExplorer() {
@@ -156,7 +177,7 @@ function renderRegionExplorer(reports = loadGeoReports()) {
   const denominator = counts.reduce((sum, value) => sum + value, 0);
   if (denominator === 0) {
     geoEls.empty.hidden = false;
-    geoEls.empty.textContent = 'This region has reports, but none carry manufacturing weight in the current view. Switch to all raw reports to inspect them.';
+    geoEls.empty.textContent = 'This region has raw reports, but none carry manufacturing weight under the current frozen scope. Switch to all raw reports to inspect them.';
     return;
   }
 
@@ -169,7 +190,7 @@ function renderRegionExplorer(reports = loadGeoReports()) {
     row.className = 'hist-row';
     row.innerHTML = `
       <span class="hist-label">${bucket.label}</span>
-      <div class="hist-track" title="${formatGeoWeight(count)} weighted observations · ${share.toFixed(1)}%">
+      <div class="hist-track" title="${formatGeoWeight(count)} observations · ${share.toFixed(1)}%">
         <div class="hist-fill" style="width: ${width.toFixed(2)}%"></div>
       </div>
       <span class="hist-value">${formatGeoWeight(count)} · ${share.toFixed(1)}%</span>
@@ -203,15 +224,18 @@ function normalizeGeoRegion(value) {
 }
 
 function reportWeight(report) {
-  const weight = Number(report?.analysis_weight);
-  return Number.isFinite(weight) ? Math.max(0, Math.min(1, weight)) : 0.5;
+  return deriveManufacturingAnalysis(report, analysisContext()).weight;
 }
 
 function loadGeoReports() {
   try {
     const stored = localStorage.getItem(GEO_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((report) => {
+      const { analysis_weight: _analysisWeight, analysis_flags: _analysisFlags, ...raw } = report ?? {};
+      return raw;
+    });
   } catch {
     return [];
   }
