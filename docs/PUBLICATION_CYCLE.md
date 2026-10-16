@@ -48,7 +48,7 @@ If a contributor supplies geography and the brand has `curated_complete` manufac
 
 The raw report is still retained.
 
-This intentionally prefers conservative publication over trying to rescue every edge case in real time. If the scope was incomplete, the next release can update the catalog and recompute the historical observation.
+This intentionally prefers conservative publication over trying to rescue every edge case in real time. Some true manufacturing reports may be excluded from a headline release if the reviewed scope is too narrow. That is acceptable as long as the raw report remains available, the scope version is public, and a later release can correct the catalog and recompute the observation.
 
 For example, once a brand's manufacturing geography has been deliberately reviewed, a report that claims a manufacturing role in a non-manufacturing city can remain in the raw dataset while contributing zero weight to the manufacturing headline distribution.
 
