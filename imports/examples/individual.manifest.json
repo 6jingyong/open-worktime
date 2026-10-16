@@ -1,0 +1,50 @@
+{
+  "import_version": "external-import-v1",
+  "source": {
+    "source_id": "example-individual-survey",
+    "title": "Example individual-level worker survey",
+    "publisher": "Open Worktime fixture",
+    "url": "https://example.invalid/individual-survey",
+    "retrieved_at": "2026-10-16",
+    "reuse_status": "redistributable",
+    "license_name": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "notes": "Synthetic fixture only."
+  },
+  "input": {
+    "format": "csv",
+    "record_kind": "individual",
+    "file": "individual.csv"
+  },
+  "mapping": {
+    "source_record_id": { "column": "record_id" },
+    "brand_id": { "column": "brand_id" },
+    "brand_name_raw": { "column": "brand" },
+    "country": { "column": "country", "transform": "upper" },
+    "work_region": { "column": "region" },
+    "employment_type": {
+      "column": "employment",
+      "map": {
+        "direct": "direct_contract",
+        "dispatch": "labor_dispatch"
+      }
+    },
+    "work_role": {
+      "column": "role",
+      "map": {
+        "frontline": "manufacturing_frontline",
+        "support": "manufacturing_support"
+      }
+    },
+    "high_income_5x": { "constant": "unknown" },
+    "weekly_hours": { "column": "weekly_hours" },
+    "period_basis": {
+      "column": "period",
+      "map": {
+        "last4": "last_4_complete_weeks",
+        "typical": "typical_week"
+      }
+    },
+    "observed_at": { "constant": "2026-09" }
+  }
+}
