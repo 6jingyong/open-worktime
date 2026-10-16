@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Open Worktime accepted observation",
-  "description": "Public observation after intake validation, server receipt metadata, and transparent manufacturing-relevance weighting are attached.",
+  "description": "Accepted public observation after intake validation and server receipt metadata are attached. Manufacturing-analysis weights are derived later for each report release.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,8 +17,6 @@
     "high_income_5x",
     "weekly_hours_bucket",
     "period_basis",
-    "analysis_weight",
-    "analysis_flags",
     "submitted_at",
     "source"
   ],
@@ -38,7 +36,7 @@
     "country": {
       "type": ["string", "null"],
       "pattern": "^[A-Z]{2}$",
-      "description": "Optional coarse work country. Missing geography does not itself reduce manufacturing relevance."
+      "description": "Optional coarse work country."
     },
     "work_region": {
       "type": ["string", "null"],
@@ -98,32 +96,6 @@
     },
     "period_basis": {
       "const": "last_4_complete_weeks"
-    },
-    "analysis_weight": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "description": "Server-derived public weight for the default manufacturing-focused analysis. Never supplied by the contributor."
-    },
-    "analysis_flags": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "manufacturing_frontline",
-          "manufacturing_support",
-          "management_role",
-          "sales_role",
-          "corporate_function_role",
-          "unknown_role",
-          "high_income_5x",
-          "known_brand_facility",
-          "location_unresolved",
-          "location_mismatch_review"
-        ]
-      },
-      "uniqueItems": true,
-      "description": "Public reasons that explain the analysis weight."
     },
     "submitted_at": {
       "type": "string",
