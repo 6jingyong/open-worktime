@@ -257,6 +257,7 @@ jobs:
           test -s docs/COMMUNITY_INTAKE.md
           test -s docs/GEOGRAPHY.md
           test -s docs/PUBLICATION_CYCLE.md
+          test -s docs/MODERATION.md
           test -s data/ATTRIBUTION.md
           test -s data/manufacturing-scope.json
           test -s backend/README.md
