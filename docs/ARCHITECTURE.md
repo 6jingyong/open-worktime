@@ -4,49 +4,51 @@
 
 The first product is intentionally narrow: **manufactured goods and brand/factory labor**.
 
-The project does not initially try to measure every kind of work. Service businesses, self-employed sellers, pure distributors, marketplaces, and broad ESG scoring are outside the MVP.
+The main question is:
 
-The initial consumer-facing question is:
+> What does the distribution of actual weekly working time look like for ordinary workers whose labor is used to make this brand's products?
 
-> What does the distribution of actual weekly working time look like for people whose labor is used to make this brand's products?
+Service businesses, pure distributors, marketplaces, broad ESG scoring, and every kind of white-collar work are outside the MVP.
 
-A second view asks how that distribution changes by work geography.
+## 2. Raw observation vs manufacturing-focused analysis
 
-## 2. Why a distribution, not a score
+Open Worktime should not reject a report just because it comes from sales, management, headquarters, an unusual region, or a high-income worker.
 
-A single brand can contain very different labor regimes at the same time. Direct hires, dispatched workers, outsourced workers, on-site service workers, and workers in different regions may have materially different schedules.
+Instead it keeps two views:
 
-The public default is therefore a weekly-hours histogram. Employment identity and geography are filters, not hidden weighting factors.
+- **raw accepted reports** — every accepted observation;
+- **manufacturing-weighted view** — the default consumer-facing histogram, using a transparent public `analysis_weight`.
 
-The project does not convert those observations into a moral score.
+This prevents the project from pretending that every employee is equally representative of factory labor while also avoiding hidden deletion.
 
-## 3. Core entities
-
-The current graph separates entity facts, supply-chain evidence, geography, and worker observations:
+## 3. Core graph
 
 ```text
 brand
   ├─ owner_company_id → company
   └─ facility-link evidence → facility
 
-report
-  ├─ brand_id → brand
-  ├─ country / subdivision_code → coarse work geography
-  ├─ facility_id → canonical facility (optional)
-  ├─ facility_text → unresolved site fallback (optional)
+submission
+  ├─ brand
+  ├─ optional country / work_region / facility
   ├─ employment identity
+  ├─ broad work role
+  ├─ high-income >=5x signal
   └─ weekly-hours bucket
+
+accepted report
+  ├─ submission facts
+  ├─ server receipt metadata
+  └─ analysis_weight + analysis_flags
 ```
 
-A facility existing in the catalog is not proof that a brand uses it. A brand-to-facility relationship therefore has its own cited evidence edge.
-
-A real brand or facility in the catalog is also not a labor-condition claim. Working-time reports are a separate layer.
+Entity facts and worker reports remain separate layers.
 
 ## 4. Observation semantics
 
-Contributors report their **average actual weekly working time over the last four complete weeks**.
+Contributors report average actual weekly working time over the **last four complete weeks**.
 
-The fixed buckets are:
+Fixed buckets:
 
 - `<35`
 - `35 <= h < 40`
@@ -59,13 +61,11 @@ The fixed buckets are:
 - `70 <= h < 75`
 - `75+`
 
-The project measures actual labor time, not merely contractual hours or whether a company labels itself as "two-day weekend".
-
-The period rule is machine-readable as `period_basis = last_4_complete_weeks` so different clients do not silently ask different questions.
+The project measures actual labor time, not contractual hours or whether an employer labels itself as having a two-day weekend.
 
 ## 5. Employment identity
 
-The initial categories are:
+The initial employment identities remain:
 
 - `direct_contract`
 - `labor_dispatch`
@@ -73,75 +73,93 @@ The initial categories are:
 - `onsite_service`
 - `other_unknown`
 
-These categories remain visible because shifting long-hour work into dispatch or outsourcing should not make it disappear from the public picture.
+Employment identity is a filter, **not a penalty**. Outsourcing should not make labor disappear.
 
-## 6. Work geography
+## 6. Broad work role
 
-v0.3 adds a coarse geography dimension:
+The default manufacturing-focused analysis needs a second dimension describing what kind of work the contributor does:
 
-- `country`: ISO 3166-1 alpha-2;
-- `subdivision_code`: optional ISO 3166-2 first-level region.
+- `manufacturing_frontline`
+- `manufacturing_support`
+- `management`
+- `sales`
+- `corporate_function`
+- `other_unknown`
 
-Examples include `CN-SH`, `US-TX`, and `DE-BB`.
+Exact job title is deliberately not collected.
 
-The public observation does not collect a home address, GPS coordinate, or precise personal location.
+Current prototype base weights:
 
-Known facilities can provide their public country and subdivision automatically. The report still carries the coarse geography so historical regional analysis is not coupled to a later facility-catalog edit.
+- frontline: `1.0`;
+- manufacturing support: `1.0`;
+- management: `0.25`;
+- sales: `0`;
+- corporate function: `0`;
+- unknown: `0.5`.
 
-Two analysis modes are intentionally distinct:
+If `high_income_5x = yes`, weight is capped at `0.25`.
 
-- **brand-first:** hold brand and optionally employment identity fixed, then compare regions;
-- **region-first:** pool reports in one region across brands.
+These rules are methodology, not private moderation logic. They belong in public documentation and in the accepted report through `analysis_weight` and `analysis_flags`.
 
-The region-first view is a community sample, not automatically a regional labor-force estimate. Brand/factory composition can dominate the result, so sample count and represented-brand count stay visible.
+## 7. Geography
 
-A regional gap is evidence of a difference in observed distributions, not by itself proof of discrimination or unlawful treatment.
+Geography is useful but optional:
+
+- `country`: nullable two-letter country code;
+- `work_region`: nullable short label such as Shanghai, Texas, Berlin, or Jiangsu;
+- `facility_id`: optional canonical facility;
+- `facility_text`: unresolved site fallback.
+
+Missing geography does not reduce weight.
+
+Known public facilities may supply country / region automatically.
+
+A canonical facility that is linked to the selected brand is positive manufacturing evidence. A known canonical facility that conflicts with the brand can be downweighted and flagged for review.
+
+Free-text region mismatches are **not automatically penalized yet**, because the current facility catalog is incomplete. Once brand × manufacturing-location coverage is stronger, that consistency check can become another public weighting signal.
 
 See [`GEOGRAPHY.md`](GEOGRAPHY.md).
 
-## 7. Facility resolution
+## 8. Client vs server responsibility
 
-Known and unknown production sites are deliberately different fields:
+The client submits facts. It must not be allowed to choose:
 
-- `facility_id`: canonical facility entity in the Open Worktime catalog;
-- `facility_text`: unresolved contributor-supplied fallback.
+- report ID;
+- authoritative receipt time;
+- source label;
+- analysis weight;
+- analysis flags.
 
-A user-entered factory name must never be treated as a verified facility ID merely because it was typed into the site field.
+The server derives those after validation.
 
-The current pilot uses an Open Supply Hub OS ID for one PUMA-linked facility. Bulk facility import and automatic matching remain out of scope.
-
-## 8. Public observation vs private intake
-
-The public observation is intentionally small. It does not need a worker's name, email, phone number, employee ID, exact job title, salary, gender, age, documents, written story, home address, or precise private location.
-
-A future ingestion backend may still need restricted operational metadata for:
-
-- rate limiting;
-- abuse resistance;
-- moderation state;
-- optional employment verification;
-- receipt tracking.
-
-Those fields belong to a **private intake layer** and must not be silently appended to public exports.
+A real backend may also keep temporary private operational metadata for rate limiting, moderation, abuse resistance, or optional employment verification. That metadata must not leak into public exports.
 
 See [`COMMUNITY_INTAKE.md`](COMMUNITY_INTAKE.md).
 
-## 9. Data-quality philosophy
+## 9. Data quality
 
-The first principle is **show the raw shape before inventing a score**.
+Useful quality signals include:
 
-Useful quality signals can include:
+- submission bursts;
+- historical discontinuities;
+- separated peaks;
+- repeated operational fingerprints;
+- disagreements between raw and high-confidence slices;
+- brand × region combinations inconsistent with known manufacturing evidence;
+- region-first samples dominated by one brand or facility.
 
-- sudden bursts of submissions;
-- large discontinuities from historical distributions;
-- separated peaks that appear only in one identity, site, or region;
-- repeated fingerprints or rate-limit violations once a backend exists;
-- disagreement between all samples and higher-trust samples;
-- regional pooled samples dominated by one brand or factory.
+A signal is not automatically a reason to delete a report.
 
-A multi-peak distribution is not itself proof of manipulation. It may reflect genuine workforce segmentation. The prototype therefore only surfaces a shape warning and never edits the histogram automatically.
+## 10. Regional analysis
 
-## 10. Public dataset layer
+Two views remain useful:
+
+- **brand-first:** hold brand and worker scope roughly fixed, compare regions;
+- **region-first:** pool reports by coarse region across brands.
+
+Region-first views must expose raw report count, weighted sample, and represented-brand count. They are community samples, not automatically estimates of a whole regional workforce.
+
+## 11. Public dataset layer
 
 Accepted data should eventually support:
 
@@ -154,64 +172,40 @@ Accepted data should eventually support:
 
 The website must not become the only copy of accepted public data.
 
-## 11. Current prototype
+## 12. Current prototype
 
-The current client remains static HTML/CSS/JavaScript on GitHub Pages.
-
-It already proves:
+The static GitHub Pages client already proves:
 
 - brand → owner resolution;
 - evidence-backed brand → facility links;
 - weekly-hours histograms;
-- employment-identity filters;
-- country / first-level-region filters;
-- region-first pooled sample exploration;
-- facility-aware local report creation;
-- privacy-minimal report schema v0.3;
-- JSON export;
-- migration of older browser-local v0.1/v0.2 demo reports.
+- employment filters;
+- optional region filters and region explorer;
+- broad-role / high-income relevance collection;
+- transparent weighted-vs-raw views;
+- v0.4 client submission and accepted-report schemas;
+- browser-local JSON export and legacy migration.
 
-Prototype reports still stay in browser `localStorage`. No real anonymous submission backend exists yet.
+No real anonymous ingestion backend exists yet.
 
-## 12. Next milestones
+## 13. Next major milestone
 
-### Community ingestion backend
+Build the community ingestion backend:
 
-- minimal anonymous `POST /v1/reports` endpoint;
-- server-side v0.3 schema validation;
-- rate limiting with minimal retention of network metadata;
-- pending/accepted/rejected moderation state;
-- opaque receipt IDs;
-- aggregate/snapshot publication after privacy review.
+- anonymous `POST /v1/reports`;
+- server-side v0.4 validation;
+- server-derived weight and flags;
+- rate limiting with minimal retention;
+- pending / accepted / rejected moderation state;
+- minimum public sample thresholds;
+- public aggregate / snapshot export.
 
-### Trust and privacy
+## 14. Non-goals for now
 
-- optional proof-of-employment verification without publishing identity;
-- minimum sample thresholds for small site / region / identity slices;
-- visible sample-quality metadata;
-- time-decay or historical windows without rewriting raw accepted observations.
-
-### Regional methodology
-
-- decide whether region-first views remain unweighted pooled samples or gain transparent weighting rules;
-- expose brand/factory composition before making cross-region claims;
-- support within-brand region comparison as the preferred first diagnostic.
-
-### Resilient distribution
-
-- signed dataset manifest;
-- immutable versioned snapshots;
-- multiple HTTP/Git mirrors;
-- Torrent and/or IPFS publication.
-
-## 13. Non-goals for now
-
-Do not add these until the basic data loop has real users:
+Do not add these before the real data loop works:
 
 - blockchain storage;
 - tokens or incentives;
 - broad company ratings;
 - complicated ESG dimensions;
-- recommendation algorithms;
-- service-sector comparisons;
-- automated claims that a company is "good", "bad", or discriminatory solely from a working-time histogram.
+- automated claims that a company is good, bad, or discriminatory solely from a working-time histogram.
