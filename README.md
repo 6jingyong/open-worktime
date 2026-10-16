@@ -11,7 +11,7 @@ The project starts narrow:
 - publish weekly-hours distributions;
 - keep employment identity visible;
 - treat geography as optional context rather than an intake gate;
-- keep raw accepted reports visible while also publishing a transparent manufacturing-focused weighting rule;
+- keep raw accepted observations separate from release-time manufacturing analysis;
 - keep entity metadata separate from labor-condition observations.
 
 ## What one contributor reports
@@ -52,7 +52,7 @@ It deliberately does **not** ask for exact salary, exact job title, name, employ
 
 The default consumer-facing view is intended to represent **ordinary manufacturing labor**, not every person who happens to work for a brand.
 
-The current prototype rule is explicit:
+The current prototype role rule is explicit:
 
 | Broad role | Base weight |
 | --- | ---: |
@@ -65,26 +65,42 @@ The current prototype rule is explicit:
 
 If a contributor reports compensation roughly >=5x typical local full-time income, their weight is capped at `0.25`.
 
-A canonical facility that is known to be linked to the selected brand can add a positive evidence flag. A canonical facility that is known but not linked to the selected brand is capped at `0.25` and flagged for location-mismatch review.
+Employment identity itself does **not** reduce weight, so labor dispatch and outsourced manufacturing remain visible.
 
-**Missing geography does not reduce weight.** Free-text region mismatches are not automatically punished yet because the facility catalog is intentionally incomplete. As the manufacturing-location catalog becomes more complete, brand × region consistency can become an additional auditable signal without rejecting the report itself.
+## Optional geography, strict publication scope
 
-Raw reports remain available through an `All raw reports` view. The weighting system is therefore not a hidden deletion rule.
-
-## Optional geography
-
-Geography is simple in v0.4:
+Geography is simple:
 
 - `country`: optional two-letter code such as `CN`, `US`, `DE`;
 - `work_region`: optional coarse label such as `Shanghai`, `Texas`, or `Berlin`;
 - known facilities may fill these automatically.
 
-This supports both:
+Missing geography is not penalized.
 
-- brand-first comparisons across regions;
-- region-first pooled community views.
+The important distinction is publication-time manufacturing scope:
 
-A regional difference is an observation, not automatic proof of discrimination. See [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md).
+- `partial` brand scope can confirm known manufacturing locations but cannot exclude unlisted ones;
+- `curated_complete` brand scope is deliberately reviewed before a report release;
+- when a contributor supplies a location outside a `curated_complete` scope, that raw observation remains available but receives manufacturing weight `0` for that release.
+
+This intentionally favors conservative publication. A later report can update the manufacturing-scope catalog and re-run the same historical raw observations.
+
+See [`data/manufacturing-scope.json`](data/manufacturing-scope.json), [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md), and [`docs/PUBLICATION_CYCLE.md`](docs/PUBLICATION_CYCLE.md).
+
+## Batch publication model
+
+Open Worktime does not need to publish every submission as an authoritative statistic in real time.
+
+A nonprofit or community operator can publish monthly, quarterly, or on another explicit cadence:
+
+1. collect raw observations continuously;
+2. freeze a report cutoff;
+3. refresh brand manufacturing countries / regions / facilities;
+4. freeze a versioned `scope_version`;
+5. derive manufacturing weights from that frozen scope and methodology;
+6. publish raw sample counts plus weighted histograms.
+
+Raw observations are not rewritten when the scope database improves.
 
 ## Current prototype
 
@@ -98,12 +114,13 @@ The dependency-free GitHub Pages client now includes:
 - optional geography filters and a region explorer;
 - manufacturing-weighted vs all-raw views;
 - broad-role and high-income relevance collection;
-- browser-local v0.4 report simulation and JSON export;
-- separate schemas for client submissions and accepted public reports.
+- browser-local raw observation storage and JSON export;
+- a versioned manufacturing-scope catalog;
+- release-time analysis generated separately from raw reports.
 
 The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows target fictional `demo-*` entities.
 
-## Submission vs accepted report
+## Data contracts
 
 The client submits facts only:
 
@@ -123,17 +140,19 @@ The client submits facts only:
 }
 ```
 
-A future server then attaches:
+The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label.
 
-- opaque report ID;
-- authoritative receipt time;
-- public source label;
+A later report build derives a separate record containing:
+
+- `report_id`;
+- `methodology_version`;
+- `scope_version`;
 - `analysis_weight`;
 - public `analysis_flags` explaining that weight.
 
-Contributors cannot choose their own weight.
+This keeps worker facts stable while allowing later report releases to improve the manufacturing-footprint database.
 
-See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md), and [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md).
+See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`schema/release-analysis.schema.json`](schema/release-analysis.schema.json), and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
 
 ## Licensing
 
@@ -155,4 +174,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. The next major engineering step is a real anonymous intake backend, not a larger front-end feature set.
+Prototype / pre-community-data. The next major engineering step is a real anonymous intake backend plus a reproducible batch publication pipeline.
