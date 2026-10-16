@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Open Worktime collaboration guide for researchers, NGOs, worker surveys, unions, and labor-data programs." />
+  <title>Research & NGO partners · Open Worktime</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./partner.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand-mark" href="./">Open Worktime</a>
+    <nav class="partner-nav" aria-label="Partner navigation">
+      <a href="./">Live prototype</a>
+      <a href="#collaborate">How to collaborate</a>
+      <a href="#privacy">Privacy</a>
+    </nav>
+  </header>
+
+  <main class="partner-main">
+    <section class="partner-hero">
+      <p class="eyebrow">For researchers, NGOs, worker surveys & labor programs</p>
+      <h1>Turn working-time evidence into something people can actually see.</h1>
+      <p class="partner-lead">Open Worktime is an open public-interest project for one simple question: <strong>how many hours do the people who make our products actually work?</strong></p>
+      <p class="partner-lead muted">We are building a transparent, privacy-minimal way to connect existing labor research with factories, regions and consumer-facing brands—without asking data partners to rebuild their data systems.</p>
+      <div class="partner-actions">
+        <a class="action-primary" href="./">See the prototype</a>
+        <a class="action-secondary" href="#collaborate">See the minimum data we need</a>
+      </div>
+      <p class="no-github-note"><strong>No GitHub knowledge is required.</strong> If someone from Open Worktime sent you this page, replying to that email is enough to start.</p>
+    </section>
+
+    <section class="partner-grid" aria-label="Project summary">
+      <article>
+        <span class="step-kicker">The gap</span>
+        <h2>Where is known. Hours often are not.</h2>
+        <p>Supply-chain datasets increasingly tell us where products are made. Labor studies often measure working conditions. But consumers rarely get a simple, comparable view of <em>actual weekly working-time distributions</em> behind products and brands.</p>
+      </article>
+      <article>
+        <span class="step-kicker">The idea</span>
+        <h2>Publish distributions, not moral scores.</h2>
+        <p>Open Worktime keeps the underlying evidence visible: hour buckets, sample sizes, employment relationships, geography, methodology and provenance. We do not reduce a factory or brand to a single “good/bad” score.</p>
+      </article>
+      <article>
+        <span class="step-kicker">The promise</span>
+        <h2>Do not make the partner do the integration.</h2>
+        <p>Partners can keep their existing survey structure. We take responsibility for source-specific adapters, field mapping, hour normalization, entity resolution and public-facing presentation.</p>
+      </article>
+    </section>
+
+    <section class="partner-section" id="collaborate">
+      <div class="section-heading">
+        <p class="eyebrow">How to collaborate</p>
+        <h2>Three useful levels—from almost zero effort to full research reuse.</h2>
+      </div>
+      <div class="collab-levels">
+        <article>
+          <strong>1 · Metadata only</strong>
+          <p>Tell us what datasets exist, what the working-time question means, and whether factory/site identifiers are stable. A data dictionary or questionnaire is already useful.</p>
+          <span class="effort">Partner effort: very low</span>
+        </article>
+        <article>
+          <strong>2 · Safe aggregates</strong>
+          <p>Provide factory/site-level hour buckets and sample counts. Raw worker-level records never need to leave your organization.</p>
+          <span class="effort">Partner effort: low</span>
+        </article>
+        <article>
+          <strong>3 · De-identified microdata</strong>
+          <p>Where permitted, provide worker-level weekly hours plus a stable anonymous factory/site ID and survey round. We do not need names or contact details.</p>
+          <span class="effort">Best analytical fidelity</span>
+        </article>
+      </div>
+
+      <div class="minimum-box">
+        <div>
+          <p class="eyebrow">Minimum useful fields</p>
+          <h3>We can start with surprisingly little.</h3>
+        </div>
+        <div class="field-table" role="table" aria-label="Minimum useful partner fields">
+          <div class="field-row field-head" role="row"><span>Field</span><span>Why it helps</span><span>Required?</span></div>
+          <div class="field-row" role="row"><span>Weekly actual hours, or hour bucket</span><span>The core measure</span><span>Yes</span></div>
+          <div class="field-row" role="row"><span>Survey round / reference period</span><span>Preserves time semantics</span><span>Strongly preferred</span></div>
+          <div class="field-row" role="row"><span>Stable factory / site ID</span><span>Enables factory and brand linkage</span><span>Best case</span></div>
+          <div class="field-row" role="row"><span>Country / coarse region</span><span>Supports geographic comparison</span><span>Helpful</span></div>
+          <div class="field-row" role="row"><span>Employment relationship</span><span>Shows direct / dispatch / outsourced differences</span><span>Helpful</span></div>
+          <div class="field-row" role="row"><span>Broad work role</span><span>Keeps sales/head-office populations from dominating manufacturing views</span><span>Helpful</span></div>
+        </div>
+        <p class="partner-note">Your column names and file format do not need to match ours. CSV/JSON can be imported directly; for Stata, R, SPSS or spreadsheet-based research, we can build a source-specific conversion instead of asking the partner to redesign the dataset.</p>
+      </div>
+    </section>
+
+    <section class="partner-section" id="what-we-do">
+      <div class="section-heading">
+        <p class="eyebrow">What Open Worktime contributes</p>
+        <h2>The partner provides evidence. We do the productization work.</h2>
+      </div>
+      <div class="what-we-do-grid">
+        <article><strong>Preserve research meaning</strong><p>A “typical week”, an annual mean and a four-week average remain different measures. We do not silently force incompatible studies into one statistic.</p></article>
+        <article><strong>Resolve entities</strong><p>We map source-specific factory IDs and legal entities to public facility records and brands only when there is auditable evidence.</p></article>
+        <article><strong>Protect privacy</strong><p>Names, employee IDs, phone numbers, emails, exact salaries and precise private locations are not part of the public observation model.</p></article>
+        <article><strong>Publish provenance</strong><p>Every external import keeps source, license/permission status, transformation rules and comparability notes.</p></article>
+        <article><strong>Make it understandable</strong><p>Consumers see distributions and sample sizes rather than opaque ESG scores or hidden model outputs.</p></article>
+        <article><strong>Keep corrections possible</strong><p>Raw evidence stays separate from later entity mappings and release-time weights, so improved supply-chain knowledge can update analysis without rewriting history.</p></article>
+      </div>
+    </section>
+
+    <section class="partner-section partner-example">
+      <div class="section-heading">
+        <p class="eyebrow">A simple example</p>
+        <h2>What happens to one existing research dataset?</h2>
+      </div>
+      <ol class="example-flow">
+        <li><strong>You already have:</strong> anonymous factory ID + survey round + weekly hours.</li>
+        <li><strong>We build:</strong> a documented adapter that preserves the survey's original definition.</li>
+        <li><strong>We resolve:</strong> the factory/site to public facility and supply-chain evidence where possible.</li>
+        <li><strong>We publish:</strong> only permitted aggregates—for example a 10-bin weekly-hours histogram, sample size, geography and provenance.</li>
+        <li><strong>The public can compare:</strong> regions, employment relationships and eventually brands, without seeing individual workers.</li>
+      </ol>
+      <p class="partner-note">If raw microdata cannot be shared, steps 1–2 can stay inside the partner organization and Open Worktime can work from a safe aggregate export instead.</p>
+    </section>
+
+    <section class="partner-section" id="privacy">
+      <div class="section-heading">
+        <p class="eyebrow">Privacy & governance</p>
+        <h2>We would rather publish less than expose a worker.</h2>
+      </div>
+      <div class="privacy-grid">
+        <article><h3>Not needed</h3><p>Name, personal email, phone, employee ID, exact salary, home address, GPS, exact private job title or complaint narrative.</p></article>
+        <article><h3>Raw data can remain restricted</h3><p>A collaboration does not require public release of partner microdata. Permission can cover only derived aggregate histograms and sample counts.</p></article>
+        <article><h3>Evidence is not accusation</h3><p>Different working-time distributions can reflect law, product mix, production cycle, employment structure or management practice. Open Worktime presents the evidence before interpreting causes.</p></article>
+      </div>
+    </section>
+
+    <section class="partner-section partner-ask">
+      <p class="eyebrow">The smallest next step</p>
+      <h2>You do not need to commit to a data transfer.</h2>
+      <p>Start by showing us a questionnaire, a data dictionary, a sample of column names, or an existing public report. We can tell you what is usable, what would remain private, and what public output could be produced before any data changes hands.</p>
+      <div class="partner-actions">
+        <a class="action-primary" href="./">Explore the live prototype</a>
+        <a class="action-secondary" href="./docs/RESEARCH_PARTNERS.md">Read the detailed partner brief</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Open Worktime · public-interest prototype · no GitHub account required to collaborate</span>
+    <a href="./">Prototype</a>
+  </footer>
+</body>
+</html>
