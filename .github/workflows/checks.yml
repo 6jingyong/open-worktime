@@ -145,7 +145,8 @@ jobs:
           assert 'manufacturing-scope.json' in app
           assert 'buildReleaseAnalysis' in app
           assert 'release_analysis:' in app
-          assert 'analysis_weight:' not in app, 'raw local report object must not store a frozen analysis weight'
+          assert 'analysis_weight: analysis.weight' not in app, 'raw local report object must not store a frozen analysis weight'
+          assert 'analysis_flags: analysis.flags' not in app, 'raw local report object must not store frozen analysis flags'
           assert 'high_income_5x:' in app
           PY
 
@@ -213,5 +214,6 @@ jobs:
           test -s README.md
           test -s docs/COMMUNITY_INTAKE.md
           test -s docs/GEOGRAPHY.md
+          test -s docs/PUBLICATION_CYCLE.md
           test -s data/ATTRIBUTION.md
           test -s data/manufacturing-scope.json
