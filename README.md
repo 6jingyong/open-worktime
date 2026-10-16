@@ -2,6 +2,8 @@
 
 Open Worktime is an open prototype for crowdsourcing **actual weekly working time** behind manufactured products and brands.
 
+Live prototype: https://6jingyong.github.io/open-worktime/
+
 The project intentionally starts narrow:
 
 - physical goods and manufacturing-oriented brands first;
@@ -48,38 +50,45 @@ The prototype remains dependency-free: plain HTML, CSS, and JavaScript. It can b
 It now includes:
 
 - a small **real brand and owner catalog seed**;
+- an evidence-backed **production-location pilot**;
 - brand search across names, aliases, and owner companies;
 - weekly-hour histogram;
 - employment-type filters;
+- production-location suggestions in the local prototype submission form;
 - a distribution-shape warning for separated peaks;
 - a submission form that stores prototype submissions only in the current browser;
 - JSON export of those local submissions;
-- a machine-readable observation schema and entity-catalog schema.
+- machine-readable observation, entity-catalog, and facility-link schemas.
 
 ### Important data boundary
 
 The repository currently contains **no real bundled working-time observations**.
 
-Real brands such as Haier, IKEA, Toyota, Lexus, Candy, AQUA, Casarte, and Comfee appear only as entity metadata. Their presence is not a claim about their labor conditions.
+Real brands such as Haier, IKEA, PUMA, Toyota, Lexus, Candy, AQUA, Casarte, and Comfee appear only as entity metadata. Their presence is not a claim about their labor conditions.
 
 The bundled histogram observations still target only four fictional `demo-*` brands. CI explicitly rejects demo rows that point at a real brand.
 
 ## Entity catalog
 
-The current graph is deliberately small:
+The graph now separates entities from evidence edges:
 
 ```text
 brand
   └─ owner_company_id → company
+
+brand
+  └─ facility-link evidence → facility
 
 report
   ├─ brand_id → brand
   └─ facility_id → facility (optional)
 ```
 
-`data/facilities.json` is empty for now. The preferred next facility-identity provider is Open Supply Hub, but no OS Hub facility records are bundled yet.
+The first facility pilot uses Open Supply Hub OS ID `CN2021159RK49KG` for NANTONG YUXIN CLOTHING CO.,LTD. The brand-to-facility edge is included because the OS Hub profile lists PUMA in the Supply Chain Network and attributes Final Product Assembly information to PUMA.
 
-See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md).
+This is intentionally a one-location pilot, not an attempt to mirror PUMA's full supplier list.
+
+See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md) and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
 ## Data model
 
@@ -97,7 +106,7 @@ A real observation is designed around a minimal record:
 }
 ```
 
-See [`schema/report.schema.json`](schema/report.schema.json) and [`schema/catalog.schema.json`](schema/catalog.schema.json).
+See [`schema/report.schema.json`](schema/report.schema.json), [`schema/catalog.schema.json`](schema/catalog.schema.json), and [`schema/facility-link.schema.json`](schema/facility-link.schema.json).
 
 ## Architecture principle
 
@@ -117,6 +126,7 @@ Licenses are deliberately separated:
 
 - **source code:** MIT;
 - **selected Brandtree-derived brand/company seed:** CC BY 4.0;
+- **Open Supply Hub-derived facility data and facility-link material:** CC BY-SA 4.0;
 - **fictional demo entities and demo distributions:** CC0 1.0;
 - **future real community working-time dataset:** not chosen yet.
 
@@ -134,14 +144,12 @@ Then open `http://localhost:8000`.
 
 ## GitHub Pages
 
-The repository includes a Pages deployment workflow. GitHub requires Pages to be enabled once at repository level:
+Pages is enabled and deploys automatically from `main` through GitHub Actions.
 
-**Settings → Pages → Build and deployment → Source → GitHub Actions**
-
-Until that one-time setting is enabled, the deployment workflow exits cleanly with a notice rather than failing the repository checks. After Pages is enabled, future pushes to `main` deploy automatically.
+Live prototype: https://6jingyong.github.io/open-worktime/
 
 ## Status
 
 Prototype / pre-community-data.
 
-The immediate goal is to validate the entity model and public interaction before importing production-site catalogs or accepting real employee submissions.
+The immediate goal is to validate the brand → production-location → worktime-observation model before accepting real employee submissions or importing facility lists at scale.
