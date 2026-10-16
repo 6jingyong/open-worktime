@@ -7,6 +7,7 @@
   <title>Open Worktime</title>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./entity.css" />
+  <link rel="stylesheet" href="./intake.css" />
 </head>
 <body>
   <header class="site-header">
@@ -74,10 +75,15 @@
     <section class="panel submit-panel">
       <div class="panel-heading compact">
         <div>
-          <p class="eyebrow">Prototype submission</p>
-          <h2>Add one observation</h2>
-          <p class="muted">For now, submissions stay only in this browser. They are included immediately in the chart and can be exported as JSON.</p>
+          <p class="eyebrow">Community intake contract preview</p>
+          <h2>Prepare one observation</h2>
+          <p class="muted">The prototype still saves only in this browser, but the record now uses the same privacy-minimal shape intended for a future anonymous submission API.</p>
         </div>
+      </div>
+
+      <div class="privacy-boundary" role="note">
+        <strong>Data minimization by default.</strong>
+        <span>Do not enter names, email addresses, phone numbers, employee IDs, or documents. The public observation does not ask for job title, salary, gender, age, or a written story.</span>
       </div>
 
       <form id="report-form">
@@ -95,7 +101,7 @@
 
           <label>
             <span>Production site (optional)</span>
-            <input id="report-facility" list="facility-options" maxlength="200" placeholder="Select an OSH facility or type another site" />
+            <input id="report-facility" list="facility-options" maxlength="200" placeholder="Select a known facility or type another site" />
             <datalist id="facility-options"></datalist>
             <small id="facility-hint">Known facilities will be suggested when available.</small>
           </label>
@@ -108,16 +114,27 @@
           <label>
             <span>Average actual weekly hours</span>
             <select id="report-hours" required></select>
+            <small>Average over the last four complete weeks.</small>
           </label>
         </div>
 
         <div class="form-actions">
-          <button type="submit">Add local observation</button>
+          <button type="submit">Save local observation</button>
           <button id="export-button" class="secondary" type="button">Export my local JSON</button>
-          <button id="clear-button" class="ghost" type="button">Clear local demo submissions</button>
+          <button id="clear-button" class="ghost" type="button">Clear local submissions</button>
         </div>
         <p id="form-status" class="form-status" role="status"></p>
       </form>
+
+      <div class="record-contract">
+        <div>
+          <p class="eyebrow">Public record preview</p>
+          <h3>What the future intake API would receive</h3>
+          <p class="muted">Known factories use a canonical facility ID. An unlisted site stays separate as fallback text instead of pretending to be a verified facility entity.</p>
+        </div>
+        <pre id="record-preview" aria-live="polite">No local report yet.</pre>
+        <p class="contract-note">Rate-limit signals, network addresses, moderation notes, and optional future employment proof belong to a private intake layer and must not be silently added to the public observation export.</p>
+      </div>
     </section>
 
     <section class="principles">
@@ -130,8 +147,8 @@
         <p>Direct employment is not the only relevant relationship. Dispatch, outsourcing, and on-site service remain visible.</p>
       </article>
       <article>
-        <h3>Keep entity facts separate from labor reports</h3>
-        <p>A real brand or production location in the catalog is not a claim about its working conditions. Working-time evidence is a separate data layer.</p>
+        <h3>Keep identity out of the public record</h3>
+        <p>The core dataset needs working-time observations and entity references, not names or employee profiles.</p>
       </article>
     </section>
   </main>

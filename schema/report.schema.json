@@ -1,26 +1,31 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Open Worktime observation",
-  "description": "Minimal community observation for actual weekly working time.",
+  "title": "Open Worktime accepted observation",
+  "description": "Public observation after intake validation and server receipt metadata are attached.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "id",
     "brand_id",
     "country",
     "facility_id",
+    "facility_text",
     "employment_type",
     "weekly_hours_bucket",
-    "observed_at"
+    "period_basis",
+    "submitted_at",
+    "source"
   ],
   "properties": {
     "schema_version": {
-      "const": "0.1"
+      "const": "0.2"
     },
     "id": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 120
+      "maxLength": 120,
+      "description": "Opaque server-assigned report identifier for accepted community reports, or a local-only opaque identifier in the prototype."
     },
     "brand_id": {
       "type": "string",
@@ -30,12 +35,17 @@
     "country": {
       "type": "string",
       "pattern": "^[A-Z]{2}$",
-      "description": "ISO 3166-1 alpha-2 country or region code."
+      "description": "ISO 3166-1 alpha-2 country or region code for the reported work."
     },
     "facility_id": {
       "type": ["string", "null"],
-      "maxLength": 160,
-      "description": "Optional production-site identifier or temporary site label."
+      "maxLength": 200,
+      "description": "Canonical Open Worktime facility identifier when the site can be resolved to the facility catalog."
+    },
+    "facility_text": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Fallback site name supplied by the contributor when no canonical facility is available. Must not contain personal names, employee IDs, phone numbers, or email addresses."
     },
     "employment_type": {
       "type": "string",
@@ -63,9 +73,14 @@
       ],
       "description": "Half-open buckets: 35_40 means 35 <= hours < 40; gte_75 means 75 hours or more."
     },
-    "observed_at": {
+    "period_basis": {
+      "const": "last_4_complete_weeks",
+      "description": "The contributor reports their average actual weekly working time over the last four complete weeks."
+    },
+    "submitted_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Server receipt time for community reports. The client must not be trusted to set publication freshness."
     },
     "source": {
       "type": "string",
