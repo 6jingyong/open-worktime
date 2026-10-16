@@ -62,6 +62,7 @@ function renderFacilitiesForVisibleBrand() {
   const linked = getLinkedFacilities(brand.id);
   facilityEls.facilityCount.textContent = String(linked.length);
   facilityEls.facilityList.innerHTML = '';
+  populateFacilityOptions(brand.id);
 
   if (linked.length === 0) {
     const empty = document.createElement('p');
