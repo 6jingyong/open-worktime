@@ -8,6 +8,7 @@ The project intentionally starts narrow:
 - no moral score and no "good/bad company" label;
 - publish the distribution of reported weekly working hours;
 - keep employment identity visible as a filter;
+- keep entity metadata separate from labor-condition observations;
 - keep the public dataset easy to copy, export, mirror, and later distribute over P2P systems.
 
 ## MVP question
@@ -42,18 +43,43 @@ The public view is a histogram, not a single score or average.
 
 ## Current prototype
 
-This first version is deliberately dependency-free: plain HTML, CSS, and JavaScript. It can be hosted directly on GitHub Pages or mirrored as static files.
+The prototype remains dependency-free: plain HTML, CSS, and JavaScript. It can be hosted directly on GitHub Pages or mirrored as static files.
 
-The demo includes:
+It now includes:
 
-- brand search;
+- a small **real brand and owner catalog seed**;
+- brand search across names, aliases, and owner companies;
 - weekly-hour histogram;
 - employment-type filters;
-- a small distribution-shape warning for separated peaks;
+- a distribution-shape warning for separated peaks;
 - a submission form that stores prototype submissions only in the current browser;
-- JSON export of those local submissions.
+- JSON export of those local submissions;
+- a machine-readable observation schema and entity-catalog schema.
 
-**All bundled sample observations are fictional demo data.** They must not be interpreted as claims about any real company.
+### Important data boundary
+
+The repository currently contains **no real bundled working-time observations**.
+
+Real brands such as Haier, IKEA, Toyota, Lexus, Candy, AQUA, Casarte, and Comfee appear only as entity metadata. Their presence is not a claim about their labor conditions.
+
+The bundled histogram observations still target only four fictional `demo-*` brands. CI explicitly rejects demo rows that point at a real brand.
+
+## Entity catalog
+
+The current graph is deliberately small:
+
+```text
+brand
+  └─ owner_company_id → company
+
+report
+  ├─ brand_id → brand
+  └─ facility_id → facility (optional)
+```
+
+`data/facilities.json` is empty for now. The preferred next facility-identity provider is Open Supply Hub, but no OS Hub facility records are bundled yet.
+
+See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md).
 
 ## Data model
 
@@ -71,24 +97,30 @@ A real observation is designed around a minimal record:
 }
 ```
 
-See [`schema/report.schema.json`](schema/report.schema.json) for the machine-readable schema.
+See [`schema/report.schema.json`](schema/report.schema.json) and [`schema/catalog.schema.json`](schema/catalog.schema.json).
 
 ## Architecture principle
 
-The project separates two problems:
+The project separates three problems:
 
-1. **Community input** — how new observations are submitted, validated, rate-limited, and moderated.
-2. **Public dataset** — how accepted observations and aggregates are exported so that no single website is the only copy.
+1. **Entity resolution** — what brand, owner company, and production site an observation refers to.
+2. **Community input** — how new observations are submitted, validated, rate-limited, and moderated.
+3. **Public dataset** — how accepted observations and aggregates are exported so that no single website is the only copy.
 
-The MVP only proves the product loop. Signed snapshots, mirrors, Torrent/IPFS distribution, and third-party ingestion are later layers.
+The MVP only proves the product loop and entity boundary. Signed snapshots, mirrors, Torrent/IPFS distribution, and a real community submission backend are later layers.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Licensing
 
-Source code is MIT licensed.
+Licenses are deliberately separated:
 
-The bundled demo observations are fictional. A license for future real community-contributed datasets has **not yet been chosen**. Do not import third-party datasets until their licenses and the future Open Worktime data license are explicitly compatible.
+- **source code:** MIT;
+- **selected Brandtree-derived brand/company seed:** CC BY 4.0;
+- **fictional demo entities and demo distributions:** CC0 1.0;
+- **future real community working-time dataset:** not chosen yet.
+
+See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md) before importing or redistributing data.
 
 ## Run locally
 
@@ -100,6 +132,16 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## GitHub Pages
+
+The repository includes a Pages deployment workflow. GitHub requires Pages to be enabled once at repository level:
+
+**Settings → Pages → Build and deployment → Source → GitHub Actions**
+
+Until that one-time setting is enabled, the deployment workflow exits cleanly with a notice rather than failing the repository checks. After Pages is enabled, future pushes to `main` deploy automatically.
+
 ## Status
 
-Prototype / pre-data. The immediate goal is to validate whether the interaction and data model are understandable before building a real submission backend or importing external entity datasets.
+Prototype / pre-community-data.
+
+The immediate goal is to validate the entity model and public interaction before importing production-site catalogs or accepting real employee submissions.
