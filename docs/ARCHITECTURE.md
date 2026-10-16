@@ -10,16 +10,18 @@ The main question is:
 
 Service businesses, pure distributors, marketplaces, broad ESG scoring, and every kind of white-collar work are outside the MVP.
 
-## 2. Raw observation vs manufacturing-focused analysis
+## 2. Raw observation vs release-time manufacturing analysis
 
-Open Worktime should not reject a report just because it comes from sales, management, headquarters, an unusual region, or a high-income worker.
+Open Worktime should accept useful raw observations even when they come from sales, management, headquarters, an unusual region, or a high-income worker.
 
-Instead it keeps two views:
+But those reports should not automatically enter the headline manufacturing statistic with equal weight.
 
-- **raw accepted reports** — every accepted observation;
-- **manufacturing-weighted view** — the default consumer-facing histogram, using a transparent public `analysis_weight`.
+The architecture therefore separates:
 
-This prevents the project from pretending that every employee is equally representative of factory labor while also avoiding hidden deletion.
+- **raw accepted reports** — stable historical worker-supplied facts plus receipt metadata;
+- **release analysis** — a reproducible weight derived later under one frozen methodology and manufacturing-scope version.
+
+This allows monthly or quarterly reports to update the brand/factory database and re-run historical observations without rewriting what contributors originally submitted.
 
 ## 3. Core graph
 
@@ -38,11 +40,15 @@ submission
 
 accepted report
   ├─ submission facts
-  ├─ server receipt metadata
-  └─ analysis_weight + analysis_flags
+  └─ server receipt metadata
+
+publication release
+  ├─ methodology_version
+  ├─ scope_version
+  └─ per-report analysis_weight + analysis_flags
 ```
 
-Entity facts and worker reports remain separate layers.
+Entity facts, worker observations, and release-time classification remain separate layers.
 
 ## 4. Observation semantics
 
@@ -77,7 +83,7 @@ Employment identity is a filter, **not a penalty**. Outsourcing should not make 
 
 ## 6. Broad work role
 
-The default manufacturing-focused analysis needs a second dimension describing what kind of work the contributor does:
+The default manufacturing-focused analysis uses a broad work-role dimension:
 
 - `manufacturing_frontline`
 - `manufacturing_support`
@@ -99,9 +105,9 @@ Current prototype base weights:
 
 If `high_income_5x = yes`, weight is capped at `0.25`.
 
-These rules are methodology, not private moderation logic. They belong in public documentation and in the accepted report through `analysis_weight` and `analysis_flags`.
+These rules are public methodology, not private moderation logic.
 
-## 7. Geography
+## 7. Geography and reviewed manufacturing scope
 
 Geography is useful but optional:
 
@@ -112,17 +118,20 @@ Geography is useful but optional:
 
 Missing geography does not reduce weight.
 
-Known public facilities may supply country / region automatically.
+The publication pipeline maintains a versioned manufacturing-scope catalog with two coverage levels:
 
-A canonical facility that is linked to the selected brand is positive manufacturing evidence. A known canonical facility that conflicts with the brand can be downweighted and flagged for review.
+- `partial`: known locations can confirm a match but cannot exclude unlisted locations;
+- `curated_complete`: coverage has been deliberately reviewed for a release and can act as a strict geography gate.
 
-Free-text region mismatches are **not automatically penalized yet**, because the current facility catalog is incomplete. Once brand × manufacturing-location coverage is stronger, that consistency check can become another public weighting signal.
+For a `curated_complete` brand, a supplied location outside the reviewed manufacturing scope receives manufacturing weight `0` for that release. The raw report remains available.
 
-See [`GEOGRAPHY.md`](GEOGRAPHY.md).
+This explicitly prefers conservative publication over trying to resolve every edge case in real time.
 
-## 8. Client vs server responsibility
+See [`GEOGRAPHY.md`](GEOGRAPHY.md) and [`PUBLICATION_CYCLE.md`](PUBLICATION_CYCLE.md).
 
-The client submits facts. It must not be allowed to choose:
+## 8. Client, intake server, and publication pipeline
+
+The client submits facts. It must not choose:
 
 - report ID;
 - authoritative receipt time;
@@ -130,9 +139,17 @@ The client submits facts. It must not be allowed to choose:
 - analysis weight;
 - analysis flags.
 
-The server derives those after validation.
+The intake server validates and stores the raw observation, then attaches only receipt metadata.
 
-A real backend may also keep temporary private operational metadata for rate limiting, moderation, abuse resistance, or optional employment verification. That metadata must not leak into public exports.
+A later publication pipeline freezes:
+
+- a cutoff timestamp;
+- `methodology_version`;
+- `scope_version`.
+
+It then derives the weights and flags used by the public manufacturing-focused charts.
+
+Private anti-abuse or verification metadata remains outside public exports.
 
 See [`COMMUNITY_INTAKE.md`](COMMUNITY_INTAKE.md).
 
@@ -145,10 +162,10 @@ Useful quality signals include:
 - separated peaks;
 - repeated operational fingerprints;
 - disagreements between raw and high-confidence slices;
-- brand × region combinations inconsistent with known manufacturing evidence;
+- brand × region combinations inconsistent with a reviewed manufacturing footprint;
 - region-first samples dominated by one brand or facility.
 
-A signal is not automatically a reason to delete a report.
+A signal is not automatically a reason to delete a raw report.
 
 ## 10. Regional analysis
 
@@ -157,20 +174,21 @@ Two views remain useful:
 - **brand-first:** hold brand and worker scope roughly fixed, compare regions;
 - **region-first:** pool reports by coarse region across brands.
 
-Region-first views must expose raw report count, weighted sample, and represented-brand count. They are community samples, not automatically estimates of a whole regional workforce.
+Region-first views must expose raw report count, current-scope weighted sample, and represented-brand count. They are community samples, not automatically estimates of a whole regional workforce.
 
 ## 11. Public dataset layer
 
-Accepted data should eventually support:
+A release should eventually support:
 
-- reproducible snapshots;
-- stable schemas;
+- reproducible raw-observation snapshots;
+- versioned manufacturing-scope catalogs;
+- versioned release-analysis records;
 - hashes and signatures;
 - mirrors;
 - later Torrent/IPFS distribution;
-- independent clients rendering the same snapshot.
+- independent clients reproducing the same histogram from the same release artifacts.
 
-The website must not become the only copy of accepted public data.
+The website must not become the only copy.
 
 ## 12. Current prototype
 
@@ -183,22 +201,32 @@ The static GitHub Pages client already proves:
 - optional region filters and region explorer;
 - broad-role / high-income relevance collection;
 - transparent weighted-vs-raw views;
-- v0.4 client submission and accepted-report schemas;
-- browser-local JSON export and legacy migration.
+- raw v0.4 observation storage;
+- versioned manufacturing-scope data;
+- release-time weight recalculation;
+- browser-local JSON export containing raw reports plus separate release analysis.
 
 No real anonymous ingestion backend exists yet.
 
-## 13. Next major milestone
+## 13. Next major milestones
 
-Build the community ingestion backend:
+### Community ingestion backend
 
 - anonymous `POST /v1/reports`;
 - server-side v0.4 validation;
-- server-derived weight and flags;
 - rate limiting with minimal retention;
 - pending / accepted / rejected moderation state;
-- minimum public sample thresholds;
-- public aggregate / snapshot export.
+- raw accepted-report storage;
+- minimum public sample thresholds.
+
+### Batch publication pipeline
+
+- freeze report cutoff;
+- update manufacturing-scope catalog;
+- freeze scope and methodology versions;
+- derive release-analysis records;
+- generate public aggregate snapshots;
+- publish reproducible manifests and hashes.
 
 ## 14. Non-goals for now
 
