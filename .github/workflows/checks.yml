@@ -20,6 +20,8 @@ jobs:
           node --check analysis.js
           node --check facility.js
           node --check geography.js
+          node --check backend/src/index.js
+          node --check backend/src/validate.js
 
       - name: Validate JSON files
         run: |
@@ -35,6 +37,7 @@ jobs:
           python -m json.tool schema/manufacturing-scope.schema.json > /dev/null
           python -m json.tool schema/catalog.schema.json > /dev/null
           python -m json.tool schema/facility-link.schema.json > /dev/null
+          python -m json.tool backend/package.json > /dev/null
 
       - name: Validate catalog relationships
         run: |
@@ -200,6 +203,31 @@ jobs:
           }
           JS
 
+      - name: Validate anonymous intake backend privacy boundaries
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          sql = Path('backend/migrations/0001_init.sql').read_text().lower()
+          worker = Path('backend/src/index.js').read_text().lower()
+          config = Path('backend/wrangler.jsonc').read_text()
+
+          forbidden_storage = [
+              'analysis_weight', 'analysis_flags', 'ip_address', 'ip address',
+              'email', 'phone', 'employee_id', 'exact_salary', 'gps'
+          ]
+          for term in forbidden_storage:
+              assert term not in sql, f'private intake SQL must not store {term}'
+
+          assert 'cf-connecting-ip' not in worker, 'worker must not persist or depend on visitor IP by default'
+          assert 'x-forwarded-for' not in worker, 'worker must not persist or depend on forwarded IP by default'
+          assert 'moderation_state' in sql and "'pending'" in sql
+          assert '"WRITE_ENABLED": "false"' in config, 'checked-in worker config must keep writes disabled'
+          PY
+
+      - name: Test anonymous intake backend
+        run: node --test backend/test/*.test.mjs
+
       - name: Check required static files
         run: |
           test -s index.html
@@ -217,3 +245,9 @@ jobs:
           test -s docs/PUBLICATION_CYCLE.md
           test -s data/ATTRIBUTION.md
           test -s data/manufacturing-scope.json
+          test -s backend/README.md
+          test -s backend/package.json
+          test -s backend/wrangler.jsonc
+          test -s backend/src/index.js
+          test -s backend/src/validate.js
+          test -s backend/migrations/0001_init.sql

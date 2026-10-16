@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "open-worktime-intake",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-16",
+  "workers_dev": true,
+  "vars": {
+    "WRITE_ENABLED": "false",
+    "ALLOWED_ORIGINS": "https://6jingyong.github.io,http://localhost:8000,http://127.0.0.1:8000"
+  }
+
+  // Intentionally no D1 binding is committed yet.
+  // Before enabling writes, create a D1 database and add:
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "open-worktime-intake",
+  //     "database_id": "<YOUR_D1_DATABASE_ID>",
+  //     "migrations_dir": "migrations"
+  //   }
+  // ]
+}

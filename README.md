@@ -104,7 +104,7 @@ Raw observations are not rewritten when the scope database improves.
 
 ## Current prototype
 
-The dependency-free GitHub Pages client now includes:
+The dependency-free GitHub Pages client includes:
 
 - a small real brand / owner seed;
 - one evidence-backed production-location pilot;
@@ -117,6 +117,18 @@ The dependency-free GitHub Pages client now includes:
 - browser-local raw observation storage and JSON export;
 - a versioned manufacturing-scope catalog;
 - release-time analysis generated separately from raw reports.
+
+The repository also contains a **disabled-by-default anonymous intake backend** under [`backend/`](backend/):
+
+- Cloudflare Worker endpoint `POST /v1/reports`;
+- strict v0.4 server-side validation;
+- D1 migration for private pending-report storage;
+- server-assigned receipt ID and receipt time;
+- no public report-reading endpoint;
+- no IP column and no release-time weight stored in the intake table;
+- unit tests that run without a Cloudflare account.
+
+`backend/wrangler.jsonc` ships with `WRITE_ENABLED = false` and no D1 binding. Merging the backend code therefore does **not** start collecting real worker data. See [`backend/README.md`](backend/README.md).
 
 The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows target fictional `demo-*` entities.
 
@@ -140,7 +152,7 @@ The client submits facts only:
 }
 ```
 
-The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label.
+The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label. New submissions first enter private storage as `pending`.
 
 A later report build derives a separate record containing:
 
@@ -164,7 +176,7 @@ See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/r
 
 See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
-## Run locally
+## Run the static prototype locally
 
 ```bash
 python -m http.server 8000
@@ -174,4 +186,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. The next major engineering steps are a real anonymous intake backend and a reproducible monthly/quarterly publication pipeline.
+Prototype / pre-community-data. The intake backend contract and storage skeleton now exist but remain intentionally disabled. The next operational work is abuse resistance + moderation, then explicit backend activation; the next publication work is a reproducible monthly/quarterly release pipeline.
