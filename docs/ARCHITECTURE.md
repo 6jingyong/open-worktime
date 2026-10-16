@@ -38,7 +38,12 @@ submission
   ├─ high-income >=5x signal
   └─ weekly-hours bucket
 
-accepted report
+private intake row
+  ├─ submission facts
+  ├─ server receipt metadata
+  └─ moderation_state = pending | accepted | rejected
+
+accepted public report
   ├─ submission facts
   └─ server receipt metadata
 
@@ -48,7 +53,7 @@ publication release
   └─ per-report analysis_weight + analysis_flags
 ```
 
-Entity facts, worker observations, and release-time classification remain separate layers.
+Entity facts, private intake state, accepted worker observations, and release-time classification remain separate layers.
 
 ## 4. Observation semantics
 
@@ -139,7 +144,16 @@ The client submits facts. It must not choose:
 - analysis weight;
 - analysis flags.
 
-The intake server validates and stores the raw observation, then attaches only receipt metadata.
+The intake server validates and stores a pending raw observation, then attaches only receipt metadata. It does **not** decide manufacturing relevance.
+
+The current backend implementation is a small Cloudflare Worker + D1-compatible schema under `backend/`. Its public write path is deliberately disabled in checked-in configuration.
+
+The Worker exposes:
+
+- `GET /health`;
+- `POST /v1/reports` when explicitly enabled.
+
+It does not expose a public raw-report query route.
 
 A later publication pipeline freezes:
 
@@ -151,23 +165,37 @@ It then derives the weights and flags used by the public manufacturing-focused c
 
 Private anti-abuse or verification metadata remains outside public exports.
 
-See [`COMMUNITY_INTAKE.md`](COMMUNITY_INTAKE.md).
+See [`COMMUNITY_INTAKE.md`](COMMUNITY_INTAKE.md) and [`../backend/README.md`](../backend/README.md).
 
-## 9. Data quality
+## 9. Intake privacy boundary
+
+The private D1 intake schema stores only:
+
+- v0.4 worker-supplied fields;
+- server-generated report ID;
+- server receipt timestamp;
+- source label;
+- moderation state.
+
+The schema intentionally has no columns for IP address, personal contact details, exact salary, exact job title, GPS data, or release-time manufacturing weights.
+
+If future abuse controls require transient or pseudonymous operational signals, their retention and isolation must be designed explicitly rather than silently adding them to the public/core record.
+
+## 10. Data quality
 
 Useful quality signals include:
 
 - submission bursts;
 - historical discontinuities;
 - separated peaks;
-- repeated operational fingerprints;
+- repeated operational fingerprints if a future private anti-abuse layer supports them;
 - disagreements between raw and high-confidence slices;
 - brand × region combinations inconsistent with a reviewed manufacturing footprint;
 - region-first samples dominated by one brand or facility.
 
 A signal is not automatically a reason to delete a raw report.
 
-## 10. Regional analysis
+## 11. Regional analysis
 
 Two views remain useful:
 
@@ -176,7 +204,7 @@ Two views remain useful:
 
 Region-first views must expose raw report count, current-scope weighted sample, and represented-brand count. They are community samples, not automatically estimates of a whole regional workforce.
 
-## 11. Public dataset layer
+## 12. Public dataset layer
 
 A release should eventually support:
 
@@ -188,11 +216,11 @@ A release should eventually support:
 - later Torrent/IPFS distribution;
 - independent clients reproducing the same histogram from the same release artifacts.
 
-The website must not become the only copy.
+The website and the live intake database must not become the only copies of published data.
 
-## 12. Current prototype
+## 13. Current prototype
 
-The static GitHub Pages client already proves:
+The static GitHub Pages client proves:
 
 - brand → owner resolution;
 - evidence-backed brand → facility links;
@@ -201,34 +229,44 @@ The static GitHub Pages client already proves:
 - optional region filters and region explorer;
 - broad-role / high-income relevance collection;
 - transparent weighted-vs-raw views;
-- raw v0.4 observation storage;
+- raw v0.4 browser-local observation storage;
 - versioned manufacturing-scope data;
 - release-time weight recalculation;
 - browser-local JSON export containing raw reports plus separate release analysis.
 
-No real anonymous ingestion backend exists yet.
+The repository also contains a tested but inactive anonymous intake backend:
 
-## 13. Next major milestones
+- strict v0.4 validation;
+- D1 migration for pending reports;
+- opaque receipt IDs and server timestamps;
+- no public read endpoint;
+- writes disabled until an operator explicitly configures D1 and changes `WRITE_ENABLED`.
 
-### Community ingestion backend
+The GitHub Pages client does not call this backend yet.
 
-- anonymous `POST /v1/reports`;
-- server-side v0.4 validation;
-- rate limiting with minimal retention;
-- pending / accepted / rejected moderation state;
-- raw accepted-report storage;
-- minimum public sample thresholds.
+## 14. Next major milestones
+
+### Operational intake activation
+
+- choose abuse / bot controls that do not require publishing worker identity;
+- define moderation workflow for `pending → accepted / rejected`;
+- define backup/export and retention procedures;
+- configure production D1;
+- explicitly enable writes;
+- then connect the static client to the API.
 
 ### Batch publication pipeline
 
 - freeze report cutoff;
+- export accepted raw observations;
 - update manufacturing-scope catalog;
 - freeze scope and methodology versions;
 - derive release-analysis records;
 - generate public aggregate snapshots;
+- apply minimum publication thresholds;
 - publish reproducible manifests and hashes.
 
-## 14. Non-goals for now
+## 15. Non-goals for now
 
 Do not add these before the real data loop works:
 
