@@ -1,11 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Open Worktime observation",
-  "description": "Privacy-minimal community observation for actual weekly working time.",
+  "title": "Open Worktime accepted observation",
+  "description": "Public observation after intake validation and server receipt metadata are attached.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "id",
     "brand_id",
     "country",
     "facility_id",
@@ -13,7 +14,8 @@
     "employment_type",
     "weekly_hours_bucket",
     "period_basis",
-    "submitted_at"
+    "submitted_at",
+    "source"
   ],
   "properties": {
     "schema_version": {
@@ -23,7 +25,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 120,
-      "description": "Client-local or server-assigned opaque report identifier."
+      "description": "Opaque server-assigned report identifier for accepted community reports, or a local-only opaque identifier in the prototype."
     },
     "brand_id": {
       "type": "string",
@@ -78,7 +80,7 @@
     "submitted_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Submission timestamp. This is used for freshness and historical aggregation, not as proof of employment."
+      "description": "Server receipt time for community reports. The client must not be trusted to set publication freshness."
     },
     "source": {
       "type": "string",
