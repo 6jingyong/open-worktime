@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime brand-to-facility evidence edge",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["brand_id", "facility_id", "relationship", "evidence", "source"],
+  "properties": {
+    "brand_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "facility_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "relationship": {
+      "type": "string",
+      "enum": ["brand_disclosed_supply_chain", "third_party_reported_supply_chain"]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["contributor", "contribution_date"],
+      "properties": {
+        "contributor": { "type": "string", "minLength": 1 },
+        "contribution_date": { "type": "string", "format": "date" },
+        "location_type": { "type": ["string", "null"] },
+        "processing_type": { "type": ["string", "null"] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "record_id", "url", "license", "verified_at"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "record_id": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "license": { "type": "string", "minLength": 1 },
+        "verified_at": { "type": "string", "format": "date" }
+      }
+    }
+  }
+}

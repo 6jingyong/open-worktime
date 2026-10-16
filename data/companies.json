@@ -62,5 +62,21 @@
       "license": "CC BY 4.0",
       "verified_at": "2026-09-16"
     }
+  },
+  {
+    "id": "bt-puma-se",
+    "name": "PUMA SE",
+    "short_name": "PUMA",
+    "type": "public",
+    "hq_country": "DE",
+    "hq_city": "Herzogenaurach",
+    "website": "https://about.puma.com",
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "puma",
+      "url": "https://brandtree.org/company/puma",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
   }
 ]

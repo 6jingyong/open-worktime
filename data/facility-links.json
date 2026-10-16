@@ -1,0 +1,20 @@
+[
+  {
+    "brand_id": "bt-puma",
+    "facility_id": "osh-CN2021159RK49KG",
+    "relationship": "brand_disclosed_supply_chain",
+    "evidence": {
+      "contributor": "PUMA",
+      "contribution_date": "2026-06-18",
+      "location_type": "Final Product Assembly",
+      "processing_type": "Final Product Assembly"
+    },
+    "source": {
+      "provider": "Open Supply Hub",
+      "record_id": "CN2021159RK49KG",
+      "url": "https://opensupplyhub.org/facilities/CN2021159RK49KG",
+      "license": "CC BY-SA 4.0",
+      "verified_at": "2026-10-16"
+    }
+  }
+]

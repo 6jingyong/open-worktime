@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "osh-CN2021159RK49KG",
+    "os_id": "CN2021159RK49KG",
+    "name": "NANTONG YUXIN CLOTHING CO.,LTD.",
+    "country": "CN",
+    "address": "No. 25 Group, Puxi Village, Baipu Town, Rugao City, Nantong Jiangsu, China",
+    "coordinates": {
+      "lat": 32.241892,
+      "lng": 120.750353
+    },
+    "sectors": ["Apparel"],
+    "location_types": ["Final Product Assembly"],
+    "processing_types": ["Final Product Assembly"],
+    "source": {
+      "provider": "Open Supply Hub",
+      "record_id": "CN2021159RK49KG",
+      "url": "https://opensupplyhub.org/facilities/CN2021159RK49KG",
+      "license": "CC BY-SA 4.0",
+      "verified_at": "2026-10-16"
+    }
+  }
+]
