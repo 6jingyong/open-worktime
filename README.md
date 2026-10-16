@@ -87,6 +87,29 @@ This intentionally favors conservative publication. A later report can update th
 
 See [`data/manufacturing-scope.json`](data/manufacturing-scope.json), [`docs/GEOGRAPHY.md`](docs/GEOGRAPHY.md), and [`docs/PUBLICATION_CYCLE.md`](docs/PUBLICATION_CYCLE.md).
 
+## External research imports
+
+Open Worktime also has a staging-first import layer under [`imports/`](imports/) for existing surveys, historical community datasets, NGO research, and manually prepared extracts.
+
+External data is **not** forced into the same shape as a fresh community submission. The importer keeps:
+
+- source / publisher / URL / retrieval date;
+- explicit reuse status and license metadata;
+- SHA-256 of the exact input file;
+- source record IDs;
+- the source's own working-time period definition;
+- unresolved raw brand names for later entity resolution;
+- transformation issues and comparability flags.
+
+Two source shapes are supported:
+
+- `individual` — one source row represents one observation;
+- `aggregate` — one source row represents a distribution cell with a `count`.
+
+Aggregate data is never expanded into synthetic workers. Only an individual record that is semantically compatible with the project's four-complete-week definition can become a `canonical_candidate`; other evidence remains useful context instead of being silently relabeled.
+
+The manifest mapping is a field whitelist, so unmapped source columns are discarded rather than copied wholesale. See [`imports/README.md`](imports/README.md).
+
 ## Batch publication model
 
 Open Worktime does not need to publish every submission as an authoritative statistic in real time.
@@ -133,7 +156,7 @@ The repository also contains a **disabled-by-default anonymous intake backend** 
 
 `backend/wrangler.jsonc` ships with `WRITE_ENABLED = false` and no D1 binding. Merging the backend code therefore does **not** start collecting real worker data. See [`backend/README.md`](backend/README.md).
 
-The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows target fictional `demo-*` entities.
+The repository still contains **no real bundled working-time observations**. Real brands are entity metadata only; bundled histogram rows and import examples are fictional fixtures.
 
 ## Data contracts
 
@@ -169,17 +192,18 @@ A later report build derives a separate record containing:
 
 This keeps worker facts stable while allowing later report releases to improve the manufacturing-footprint database.
 
-See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`schema/release-analysis.schema.json`](schema/release-analysis.schema.json), and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
+See [`schema/submission.schema.json`](schema/submission.schema.json), [`schema/report.schema.json`](schema/report.schema.json), [`schema/release-analysis.schema.json`](schema/release-analysis.schema.json), [`schema/external-import-manifest.schema.json`](schema/external-import-manifest.schema.json), and [`schema/external-evidence.schema.json`](schema/external-evidence.schema.json).
 
 ## Licensing
 
 - **source code:** MIT;
 - **selected Brandtree-derived brand/company seed:** CC BY 4.0;
 - **Open Supply Hub-derived facility data and facility-link material:** CC BY-SA 4.0;
-- **fictional demo entities and demo distributions:** CC0 1.0;
-- **future real community working-time dataset:** not chosen yet.
+- **fictional demo entities, demo distributions, and import fixtures:** CC0 1.0;
+- **future real community working-time dataset:** not chosen yet;
+- **external research imports:** retain their own per-source license / permission metadata and are not assumed redistributable merely because they are technically accessible.
 
-See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
+See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md) and [`imports/README.md`](imports/README.md).
 
 ## Run the static prototype locally
 
@@ -191,4 +215,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. Intake, private moderation, accepted-raw export, and private backup paths now exist but public writes remain intentionally disabled. The next operational work is abuse resistance plus an explicit retention policy; the next publication work is minimum-sample privacy thresholds and a reproducible monthly/quarterly release builder.
+Prototype / pre-community-data. Intake, private moderation, accepted-raw export, private backup, and a provenance-preserving external-data staging pipeline now exist. Public writes remain intentionally disabled. The next useful data work is source-specific adapters/entity resolution for real external datasets rather than prematurely building a publication scheduler.
