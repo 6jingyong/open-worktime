@@ -80,7 +80,7 @@ async function boot() {
     populateBrandControls();
     populateEmploymentControls();
     populateHourControls();
-    renderRecordPreview(state.localReports.at(-1) ?? null);
+    renderRecordPreview(state.localReports.length ? toSubmissionPayload(state.localReports.at(-1)) : null);
 
     if (state.selectedBrandId) selectBrand(state.selectedBrandId);
   } catch (error) {
@@ -337,25 +337,29 @@ els.reportForm.addEventListener('submit', (event) => {
     return;
   }
 
-  const report = {
+  const submission = {
     schema_version: '0.2',
-    id: globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     brand_id: els.reportBrand.value,
     country,
     facility_id: knownFacility?.id ?? null,
     facility_text: facilityInput && !knownFacility ? facilityInput : null,
     employment_type: els.reportEmployment.value,
     weekly_hours_bucket: els.reportHours.value,
-    period_basis: PERIOD_BASIS,
+    period_basis: PERIOD_BASIS
+  };
+
+  const report = {
+    ...submission,
+    id: globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     submitted_at: new Date().toISOString(),
     source: 'local_prototype'
   };
 
   state.localReports.push(report);
   saveLocalReports();
-  renderRecordPreview(report);
+  renderRecordPreview(submission);
   selectBrand(report.brand_id);
-  els.formStatus.textContent = 'Saved locally in the same public record shape a future anonymous intake API can accept. Nothing was uploaded.';
+  els.formStatus.textContent = 'Saved locally. The preview shows only the future client submission payload; receipt time and report ID are added separately. Nothing was uploaded.';
   els.reportFacility.value = '';
 });
 
@@ -398,14 +402,28 @@ function resolveKnownFacility(value) {
   ) ?? null;
 }
 
-function renderRecordPreview(report) {
+function toSubmissionPayload(report) {
+  if (!report) return null;
+  return {
+    schema_version: '0.2',
+    brand_id: report.brand_id,
+    country: report.country,
+    facility_id: report.facility_id ?? null,
+    facility_text: report.facility_text ?? null,
+    employment_type: report.employment_type,
+    weekly_hours_bucket: report.weekly_hours_bucket,
+    period_basis: PERIOD_BASIS
+  };
+}
+
+function renderRecordPreview(payload) {
   if (!els.recordPreview) return;
-  if (!report) {
+  if (!payload) {
     els.recordPreview.textContent = 'No local report yet.';
     return;
   }
 
-  els.recordPreview.textContent = JSON.stringify(report, null, 2);
+  els.recordPreview.textContent = JSON.stringify(payload, null, 2);
 }
 
 function loadLocalReports() {
