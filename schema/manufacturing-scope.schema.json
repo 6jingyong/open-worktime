@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime manufacturing scope catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scope_version", "reviewed_at", "brands"],
+  "properties": {
+    "scope_version": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "reviewed_at": { "type": "string", "format": "date" },
+    "brands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["brand_id", "coverage", "locations", "facility_ids", "note"],
+        "properties": {
+          "brand_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "coverage": { "type": "string", "enum": ["partial", "curated_complete"] },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["country", "region_aliases"],
+              "properties": {
+                "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+                "region_aliases": {
+                  "type": "array",
+                  "items": { "type": "string", "minLength": 1, "maxLength": 80 },
+                  "uniqueItems": true
+                }
+              }
+            }
+          },
+          "facility_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "uniqueItems": true
+          },
+          "note": { "type": "string", "maxLength": 500 }
+        }
+      }
+    }
+  }
+}
