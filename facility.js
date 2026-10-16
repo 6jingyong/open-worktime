@@ -83,6 +83,8 @@ function renderFacilitiesForVisibleBrand() {
     const evidence = link.evidence ?? {};
     const details = [
       facility.country,
+      facility.subdivision_code ?? null,
+      facility.locality ?? null,
       facility.os_id ? `OS ID ${facility.os_id}` : null,
       evidence.location_type ?? null
     ].filter(Boolean).join(' · ');
@@ -108,12 +110,12 @@ function populateFacilityOptions(brandId) {
 
   const linked = getLinkedFacilities(brandId);
   facilityEls.facilityOptions.innerHTML = linked
-    .map(({ facility }) => `<option value="${escapeFacilityHtml(facility.id)}" label="${escapeFacilityHtml(facility.name)} · ${escapeFacilityHtml(facility.os_id ?? '')}"></option>`)
+    .map(({ facility }) => `<option value="${escapeFacilityHtml(facility.id)}" label="${escapeFacilityHtml(facility.name)} · ${escapeFacilityHtml(facility.subdivision_code ?? facility.country)} · ${escapeFacilityHtml(facility.os_id ?? '')}"></option>`)
     .join('');
 
   if (facilityEls.facilityHint) {
     facilityEls.facilityHint.textContent = linked.length > 0
-      ? `${linked.length} evidence-backed production location(s) are suggested for this brand. You can still type another site if it is missing.`
+      ? `${linked.length} evidence-backed production location(s) are suggested for this brand. Selecting one can fill its country/region automatically.`
       : 'No linked facility is in the pilot catalog for this brand. You can still enter a factory/site name manually.';
   }
 }

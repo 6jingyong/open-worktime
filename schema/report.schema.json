@@ -9,6 +9,7 @@
     "id",
     "brand_id",
     "country",
+    "subdivision_code",
     "facility_id",
     "facility_text",
     "employment_type",
@@ -19,7 +20,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.2"
+      "const": "0.3"
     },
     "id": {
       "type": "string",
@@ -35,7 +36,13 @@
     "country": {
       "type": "string",
       "pattern": "^[A-Z]{2}$",
-      "description": "ISO 3166-1 alpha-2 country or region code for the reported work."
+      "description": "ISO 3166-1 alpha-2 country code for the reported work."
+    },
+    "subdivision_code": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+      "maxLength": 8,
+      "description": "Optional coarse ISO 3166-2 first-level work region. This enables regional comparison without publishing a precise worker location."
     },
     "facility_id": {
       "type": ["string", "null"],

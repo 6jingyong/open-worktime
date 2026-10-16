@@ -35,7 +35,7 @@
       "additionalProperties": false,
       "required": ["id", "name", "short_name", "type", "hq_country", "hq_city", "website", "source"],
       "properties": {
-        "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "id": { "type": "string", "minLength": 1, "maxLength": 240 },
         "name": { "type": "string", "minLength": 1, "maxLength": 240 },
         "short_name": { "type": "string", "minLength": 1, "maxLength": 160 },
         "type": { "type": "string", "minLength": 1, "maxLength": 80 },
@@ -53,6 +53,12 @@
         "id": { "type": "string", "minLength": 1, "maxLength": 200 },
         "name": { "type": "string", "minLength": 1, "maxLength": 300 },
         "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "subdivision_code": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+          "maxLength": 8
+        },
+        "locality": { "type": ["string", "null"], "maxLength": 160 },
         "source": { "$ref": "#/$defs/source" }
       }
     }

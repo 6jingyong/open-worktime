@@ -18,6 +18,7 @@ jobs:
         run: |
           node --check app.js
           node --check facility.js
+          node --check geography.js
 
       - name: Validate JSON files
         run: |
@@ -35,6 +36,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import re
           from pathlib import Path
 
           brands = json.loads(Path('data/brands.json').read_text())
@@ -68,6 +70,10 @@ jobs:
               os_id = facility.get('os_id')
               if os_id:
                   assert facility['id'] == f"osh-{os_id}", f"facility id must preserve OS ID: {facility['id']}"
+              subdivision = facility.get('subdivision_code')
+              if subdivision:
+                  assert re.fullmatch(r'[A-Z]{2}-[A-Z0-9]{1,3}', subdivision), f"invalid subdivision code: {subdivision}"
+                  assert subdivision.startswith(f"{facility['country']}-"), f"facility subdivision/country mismatch: {facility['id']}"
 
           seen_edges = set()
           allowed_relationships = {
@@ -112,25 +118,31 @@ jobs:
           report = json.loads(Path('schema/report.schema.json').read_text())
 
           client_fields = {
-              'schema_version', 'brand_id', 'country', 'facility_id', 'facility_text',
-              'employment_type', 'weekly_hours_bucket', 'period_basis'
+              'schema_version', 'brand_id', 'country', 'subdivision_code',
+              'facility_id', 'facility_text', 'employment_type',
+              'weekly_hours_bucket', 'period_basis'
           }
           receipt_fields = {'id', 'submitted_at', 'source'}
 
           assert client_fields <= set(submission['required'])
           assert receipt_fields.isdisjoint(submission['properties']), 'client must not choose receipt metadata'
           assert client_fields | receipt_fields <= set(report['required'])
-          assert submission['properties']['schema_version']['const'] == '0.2'
-          assert report['properties']['schema_version']['const'] == '0.2'
+          assert submission['properties']['schema_version']['const'] == '0.3'
+          assert report['properties']['schema_version']['const'] == '0.3'
           assert submission['properties']['period_basis']['const'] == 'last_4_complete_weeks'
           assert report['properties']['period_basis']['const'] == 'last_4_complete_weeks'
-          assert 'observed_at' not in report['properties'], 'legacy observed_at field should not remain in v0.2'
+          assert 'observed_at' not in report['properties'], 'legacy observed_at field should not remain'
 
           app = Path('app.js').read_text()
           assert "const submission = {" in app, 'client must build a submission object'
           assert "const report = {" in app, 'client must separately build the local accepted-report simulation'
           assert 'facility_text:' in app, 'client must keep unresolved facility text separate'
+          assert 'subdivision_code:' in app, 'client must include coarse region'
           assert 'period_basis: PERIOD_BASIS' in app, 'client must record the fixed reporting period'
+
+          geography = Path('geography.js').read_text()
+          assert 'Brands represented' not in geography or 'brand_id' in geography
+          assert 'subdivision:' in geography, 'regional explorer must support subdivision filters'
           PY
 
       - name: Check required static files
@@ -139,8 +151,10 @@ jobs:
           test -s styles.css
           test -s entity.css
           test -s intake.css
+          test -s geography.css
           test -s app.js
           test -s facility.js
+          test -s geography.js
           test -s README.md
           test -s docs/COMMUNITY_INTAKE.md
           test -s data/ATTRIBUTION.md
