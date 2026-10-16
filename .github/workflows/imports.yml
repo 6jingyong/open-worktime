@@ -1,0 +1,59 @@
+name: External import checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check importer JavaScript
+        run: |
+          node --check imports/lib.mjs
+          node --check imports/import.mjs
+
+      - name: Validate import schemas and manifests
+        run: |
+          python -m json.tool schema/external-import-manifest.schema.json > /dev/null
+          python -m json.tool schema/external-evidence.schema.json > /dev/null
+          python -m json.tool imports/examples/individual.manifest.json > /dev/null
+          python -m json.tool imports/examples/aggregate.manifest.json > /dev/null
+
+      - name: Test import semantics
+        run: node --test imports/test/*.test.mjs
+
+      - name: Smoke-test reproducible bundles
+        run: |
+          node imports/import.mjs imports/examples/individual.manifest.json --out /tmp/individual.json
+          node imports/import.mjs imports/examples/aggregate.manifest.json --out /tmp/aggregate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          individual = json.loads(Path('/tmp/individual.json').read_text())
+          aggregate = json.loads(Path('/tmp/aggregate.json').read_text())
+
+          assert individual['input']['row_count'] == 2
+          assert len(individual['input']['sha256']) == 64
+          assert individual['summary']['canonical_candidates'] == 1
+          assert 'employee_name' not in Path('/tmp/individual.json').read_text()
+
+          assert aggregate['input']['row_count'] == 2
+          assert [row['count'] for row in aggregate['records']] == [18, 31]
+          assert all(row['evidence_kind'] == 'aggregate' for row in aggregate['records'])
+          PY
+
+      - name: Check required import files
+        run: |
+          test -s imports/README.md
+          test -s imports/lib.mjs
+          test -s imports/import.mjs
+          test -s schema/external-import-manifest.schema.json
+          test -s schema/external-evidence.schema.json
