@@ -66,7 +66,7 @@ jobs:
           assert forbidden.isdisjoint(props), 'area pilot must remain brandless and privacy-minimal'
 
           docs = Path('docs/AREA_SURVEY_PILOT.md').read_text().lower()
-          for phrase in ['不要填写家庭住址', '不要求填写姓名', '不问公司', 'exact salary']:
+          for phrase in ['不要填写家庭住址', '不要求填写姓名', '公司名称', 'exact salary']:
               assert phrase.lower() in docs
           PY
 
