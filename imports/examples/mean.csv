@@ -1,0 +1,3 @@
+row_id,country_code,country_label,industry_code,industry_label,year,mean_weekly_hours
+mean-1,CHN,China,ECO_ISIC4_C,C. Manufacturing,2024,46.2
+mean-2,DEU,Germany,ECO_ISIC4_C,C. Manufacturing,2024,35.8

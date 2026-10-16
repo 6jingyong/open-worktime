@@ -6,7 +6,14 @@ const EMPLOYMENT = new Set(['direct_contract', 'labor_dispatch', 'labor_outsourc
 const ROLES = new Set(['manufacturing_frontline', 'manufacturing_support', 'management', 'sales', 'corporate_function', 'other_unknown']);
 const INCOME = new Set(['no', 'yes', 'unknown']);
 const BUCKETS = new Set(['lt_35', '35_40', '40_45', '45_50', '50_55', '55_60', '60_65', '65_70', '70_75', 'gte_75']);
-const PERIODS = new Set(['last_4_complete_weeks', 'typical_week', 'survey_week', 'contract_schedule', 'unknown']);
+const PERIODS = new Set(['last_4_complete_weeks', 'typical_week', 'survey_week', 'annual_mean_actual_week', 'contract_schedule', 'unknown']);
+const RECORD_KINDS = new Set(['individual', 'aggregate', 'aggregate_statistic']);
+const MEASURE_TYPES = new Set([
+  'weekly_hours_observation',
+  'weekly_hours_distribution_cell',
+  'mean_weekly_hours',
+  'schedule_span_hours'
+]);
 
 export function parseCsv(text) {
   const rows = [];
@@ -78,6 +85,7 @@ export function normalizeImport(manifest, sourceRows, generatedAt = new Date().t
     canonical_candidates: records.filter((r) => r.comparability === 'canonical_candidate').length,
     distribution_context: records.filter((r) => r.comparability === 'distribution_context').length,
     context_only: records.filter((r) => r.comparability === 'context_only').length,
+    aggregate_statistics: records.filter((r) => r.evidence_kind === 'aggregate_statistic').length,
     publishable: records.filter((r) => r.publishable).length,
     with_issues: records.filter((r) => r.issues.length > 0).length
   };
@@ -86,6 +94,7 @@ export function normalizeImport(manifest, sourceRows, generatedAt = new Date().t
     source: manifest.source,
     generated_at: generatedAt,
     record_kind: manifest.input.record_kind,
+    measure_type: manifest.input.measure_type,
     summary,
     records
   };
@@ -97,6 +106,7 @@ export function buildBundle(manifestPath, generatedAt = new Date().toISOString()
   bundle.input = {
     format: manifest.input.format,
     record_kind: manifest.input.record_kind,
+    measure_type: manifest.input.measure_type,
     file: manifest.input.file,
     sha256: inputHash,
     row_count: sourceRows.length
@@ -109,23 +119,37 @@ export function normalizeRow(manifest, row, rowNumber) {
   const get = (name) => applyRule(row, manifest.mapping[name]);
   const sourceRecordId = stringOrNull(get('source_record_id')) ?? `row-${rowNumber}`;
   const kind = manifest.input.record_kind;
+  const measureType = manifest.input.measure_type;
   const issues = [];
 
-  let bucket = stringOrNull(get('weekly_hours_bucket'));
-  if (!bucket) {
+  let bucket = null;
+  let weeklyHoursValue = null;
+  if (measureType === 'weekly_hours_observation' || measureType === 'weekly_hours_distribution_cell') {
+    bucket = stringOrNull(get('weekly_hours_bucket'));
+    if (!bucket) {
+      const rawHours = get('weekly_hours');
+      if (rawHours !== undefined && rawHours !== null && String(rawHours).trim() !== '') {
+        const hours = Number(rawHours);
+        if (Number.isFinite(hours) && hours >= 0 && hours <= 168) bucket = hoursToBucket(hours);
+        else issues.push('invalid_weekly_hours');
+      }
+    }
+    if (bucket && !BUCKETS.has(bucket)) {
+      issues.push('invalid_hours_bucket');
+      bucket = null;
+    }
+  } else {
     const rawHours = get('weekly_hours');
     if (rawHours !== undefined && rawHours !== null && String(rawHours).trim() !== '') {
       const hours = Number(rawHours);
-      if (Number.isFinite(hours) && hours >= 0 && hours <= 168) bucket = hoursToBucket(hours);
+      if (Number.isFinite(hours) && hours >= 0 && hours <= 168) weeklyHoursValue = hours;
       else issues.push('invalid_weekly_hours');
     }
   }
-  if (bucket && !BUCKETS.has(bucket)) {
-    issues.push('invalid_hours_bucket');
-    bucket = null;
-  }
 
   let country = stringOrNull(get('country'));
+  const countryCodeRaw = stringOrNull(get('country_code_raw'));
+  const countryLabelRaw = stringOrNull(get('country_label_raw'));
   if (country) {
     country = country.toUpperCase();
     if (!/^[A-Z]{2}$/.test(country)) {
@@ -136,7 +160,7 @@ export function normalizeRow(manifest, row, rowNumber) {
 
   const brandId = stringOrNull(get('brand_id'));
   const brandNameRaw = stringOrNull(get('brand_name_raw'));
-  if (!brandId) issues.push('unresolved_brand');
+  if (!brandId && (brandNameRaw || kind === 'individual')) issues.push('unresolved_brand');
 
   const employmentType = enumOrNull(get('employment_type'), EMPLOYMENT, 'unknown_employment_type', issues);
   const workRole = enumOrNull(get('work_role'), ROLES, 'unknown_work_role', issues);
@@ -152,16 +176,22 @@ export function normalizeRow(manifest, row, rowNumber) {
     source_id: manifest.source.source_id,
     source_record_id: sourceRecordId,
     evidence_kind: kind,
+    measure_type: measureType,
     brand_id: brandId,
     brand_name_raw: brandNameRaw,
     country,
+    country_code_raw: countryCodeRaw,
+    country_label_raw: countryLabelRaw,
     work_region: stringOrNull(get('work_region')),
     facility_id: stringOrNull(get('facility_id')),
     facility_text: stringOrNull(get('facility_text')),
+    industry_code: stringOrNull(get('industry_code')),
+    industry_label: stringOrNull(get('industry_label')),
     employment_type: employmentType,
     work_role: workRole,
     high_income_5x: highIncome,
     weekly_hours_bucket: bucket,
+    weekly_hours_value: weeklyHoursValue,
     period_basis: periodBasis,
     observed_at: stringOrNull(get('observed_at')),
     comparability: 'context_only',
@@ -175,10 +205,17 @@ export function normalizeRow(manifest, row, rowNumber) {
     else record.count = count;
   }
 
-  if (!bucket) issues.push('missing_hours');
-  if (kind === 'individual' && isCanonicalCandidate(record)) {
+  if ((measureType === 'weekly_hours_observation' || measureType === 'weekly_hours_distribution_cell') && !bucket) {
+    issues.push('missing_hours');
+  }
+  if ((measureType === 'mean_weekly_hours' || measureType === 'schedule_span_hours') && weeklyHoursValue === null) {
+    issues.push('missing_hours');
+  }
+
+  if (kind === 'individual' && measureType === 'weekly_hours_observation' && isCanonicalCandidate(record)) {
     record.comparability = 'canonical_candidate';
-  } else if (bucket && (kind === 'aggregate' || periodBasis !== 'unknown')) {
+  } else if (measureType === 'weekly_hours_distribution_cell' ||
+    (measureType === 'weekly_hours_observation' && bucket && periodBasis !== 'unknown')) {
     record.comparability = 'distribution_context';
   }
 
@@ -241,6 +278,9 @@ export function validateManifest(manifest) {
   if (!manifest.source?.source_id || !manifest.source?.title || !manifest.source?.publisher || !manifest.source?.url || !manifest.source?.retrieved_at) throw new Error('source metadata is incomplete');
   if (!['redistributable', 'internal_only', 'unknown'].includes(manifest.source.reuse_status)) throw new Error('invalid reuse_status');
   if (!['csv', 'json'].includes(manifest.input?.format)) throw new Error('unsupported input format');
-  if (!['individual', 'aggregate'].includes(manifest.input?.record_kind)) throw new Error('unsupported record_kind');
+  if (!RECORD_KINDS.has(manifest.input?.record_kind)) throw new Error('unsupported record_kind');
+  if (!MEASURE_TYPES.has(manifest.input?.measure_type)) throw new Error('unsupported measure_type');
+  if (manifest.input.record_kind === 'aggregate' && manifest.input.measure_type !== 'weekly_hours_distribution_cell') throw new Error('aggregate imports must be distribution cells');
+  if (manifest.input.record_kind === 'aggregate_statistic' && manifest.input.measure_type !== 'mean_weekly_hours') throw new Error('aggregate_statistic imports must use mean_weekly_hours');
   if (!manifest.input?.file || !manifest.mapping || typeof manifest.mapping !== 'object') throw new Error('input file and mapping are required');
 }

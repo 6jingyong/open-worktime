@@ -25,12 +25,30 @@
     "input": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["format", "record_kind", "file"],
+      "required": ["format", "record_kind", "measure_type", "file"],
       "properties": {
         "format": { "enum": ["csv", "json"] },
-        "record_kind": { "enum": ["individual", "aggregate"] },
+        "record_kind": { "enum": ["individual", "aggregate", "aggregate_statistic"] },
+        "measure_type": {
+          "enum": [
+            "weekly_hours_observation",
+            "weekly_hours_distribution_cell",
+            "mean_weekly_hours",
+            "schedule_span_hours"
+          ]
+        },
         "file": { "type": "string", "minLength": 1, "maxLength": 500 }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "record_kind": { "const": "aggregate" } } },
+          "then": { "properties": { "measure_type": { "const": "weekly_hours_distribution_cell" } } }
+        },
+        {
+          "if": { "properties": { "record_kind": { "const": "aggregate_statistic" } } },
+          "then": { "properties": { "measure_type": { "const": "mean_weekly_hours" } } }
+        }
+      ]
     },
     "mapping": {
       "type": "object",

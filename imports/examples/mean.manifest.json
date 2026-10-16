@@ -1,0 +1,30 @@
+{
+  "import_version": "external-import-v1",
+  "source": {
+    "source_id": "example-aggregate-mean",
+    "title": "Example aggregate mean actual weekly hours",
+    "publisher": "Open Worktime fixture",
+    "url": "https://example.invalid/aggregate-mean",
+    "retrieved_at": "2026-10-16",
+    "reuse_status": "redistributable",
+    "license_name": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "notes": "Synthetic fixture only."
+  },
+  "input": {
+    "format": "csv",
+    "record_kind": "aggregate_statistic",
+    "measure_type": "mean_weekly_hours",
+    "file": "mean.csv"
+  },
+  "mapping": {
+    "source_record_id": { "column": "row_id" },
+    "country_code_raw": { "column": "country_code" },
+    "country_label_raw": { "column": "country_label" },
+    "industry_code": { "column": "industry_code" },
+    "industry_label": { "column": "industry_label" },
+    "weekly_hours": { "column": "mean_weekly_hours" },
+    "period_basis": { "constant": "annual_mean_actual_week" },
+    "observed_at": { "column": "year" }
+  }
+}

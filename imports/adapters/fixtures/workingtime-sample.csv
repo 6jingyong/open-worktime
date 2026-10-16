@@ -1,0 +1,4 @@
+id,company,department,job,base,work_begin,work_end,launch_time,dinner_time,wed,fri,workdays,summary,remark,category,suggestion,struct,welfare
+1,Example Electronics,Assembly,Operator,Shanghai,09:00,18:00,2022-01,18:00,false,false,5,synthetic,row should not copy department/job,制造业,,,standard,
+2,Example Auto,Sales,Manager,Beijing,09:30,19:00,2022-02,18:30,false,false,5,synthetic,row should remain context only,汽车,,,standard,
+3,Example Components,Line,Technician,Suzhou,flexible,18:00,2022-03,18:00,false,false,5,synthetic,unparseable schedule,制造业,,,standard,
