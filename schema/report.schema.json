@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-worktime.example/schema/report.schema.json",
+  "title": "Open Worktime observation",
+  "description": "Minimal community observation for actual weekly working time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "brand_id",
+    "country",
+    "facility_id",
+    "employment_type",
+    "weekly_hours_bucket",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "brand_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "country": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2 country or region code."
+    },
+    "facility_id": {
+      "type": ["string", "null"],
+      "maxLength": 160,
+      "description": "Optional production-site identifier or temporary site label."
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "direct_contract",
+        "labor_dispatch",
+        "labor_outsource",
+        "onsite_service",
+        "other_unknown"
+      ]
+    },
+    "weekly_hours_bucket": {
+      "type": "string",
+      "enum": [
+        "lt_35",
+        "35_40",
+        "40_45",
+        "45_50",
+        "50_55",
+        "55_60",
+        "60_65",
+        "65_70",
+        "70_75",
+        "gte_75"
+      ],
+      "description": "Half-open buckets: 35_40 means 35 <= hours < 40; gte_75 means 75 hours or more."
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["local_prototype", "community_report", "imported_with_permission"]
+    }
+  }
+}
