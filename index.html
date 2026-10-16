@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./entity.css" />
   <link rel="stylesheet" href="./intake.css" />
+  <link rel="stylesheet" href="./geography.css" />
 </head>
 <body>
   <header class="site-header">
@@ -22,8 +23,8 @@
     <section class="hero">
       <p class="eyebrow">Working-time transparency for manufactured goods</p>
       <h1>How many hours do the people who make your products actually work?</h1>
-      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare direct hires, dispatched labor, outsourced labor, and on-site service workers.</p>
-      <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久。</p>
+      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare employment identities and work regions.</p>
+      <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久，以及同一品牌在不同地区是否存在明显差异。</p>
 
       <div class="search-row">
         <label class="sr-only" for="brand-search">Search a brand</label>
@@ -54,6 +55,12 @@
         <div id="employment-filters" class="chip-row" role="group" aria-label="Employment identity filter"></div>
       </div>
 
+      <div class="filter-block">
+        <span class="filter-label">Work geography</span>
+        <div id="geography-filters" class="chip-row" role="group" aria-label="Work geography filter"></div>
+        <p class="method-note">Country and first-level subdivision filters appear when reports contain geography metadata. Examples: CN-SH, US-TX, DE-BB.</p>
+      </div>
+
       <div class="histogram" id="histogram" aria-label="Weekly working hours distribution"></div>
 
       <div id="shape-note" class="shape-note" hidden></div>
@@ -72,18 +79,57 @@
       </div>
     </section>
 
+    <section class="panel" id="region-panel">
+      <div class="panel-heading compact">
+        <div>
+          <p class="eyebrow">Region explorer</p>
+          <h2>Working-time reports by geography</h2>
+          <p class="muted">Pool reports by country or first-level subdivision to inspect regional patterns across brands.</p>
+        </div>
+      </div>
+
+      <div class="region-controls">
+        <label>
+          <span>Region</span>
+          <select id="region-select" aria-label="Region"></select>
+        </label>
+        <label>
+          <span>Employment identity</span>
+          <select id="region-employment" aria-label="Regional employment identity"></select>
+        </label>
+      </div>
+
+      <div class="region-metrics">
+        <div class="region-metric">
+          <span>Sample</span>
+          <strong id="region-sample-count">0</strong>
+        </div>
+        <div class="region-metric">
+          <span>Brands represented</span>
+          <strong id="region-brand-count">0</strong>
+        </div>
+      </div>
+
+      <div class="histogram" id="region-histogram" aria-label="Regional weekly working hours distribution"></div>
+      <p id="region-empty" class="region-empty"></p>
+      <div class="region-warning">
+        <strong>Regional sample ≠ regional labor-force average.</strong>
+        Community submissions can be dominated by a few brands, factories, or employment types. Use the brand count and filters when interpreting cross-region differences. The strongest comparison is often the same brand and employment identity across different regions.
+      </div>
+    </section>
+
     <section class="panel submit-panel">
       <div class="panel-heading compact">
         <div>
           <p class="eyebrow">Community intake contract preview</p>
           <h2>Prepare one observation</h2>
-          <p class="muted">The prototype still saves only in this browser, but the record now uses the same privacy-minimal shape intended for a future anonymous submission API.</p>
+          <p class="muted">The prototype still saves only in this browser, but the record uses the same privacy-minimal shape intended for a future anonymous submission API.</p>
         </div>
       </div>
 
       <div class="privacy-boundary" role="note">
         <strong>Data minimization by default.</strong>
-        <span>Do not enter names, email addresses, phone numbers, employee IDs, or documents. The public observation does not ask for job title, salary, gender, age, or a written story.</span>
+        <span>Do not enter names, email addresses, phone numbers, employee IDs, or documents. Geography stops at a coarse country / state / province level unless a public production-site entity is already known.</span>
       </div>
 
       <form id="report-form">
@@ -94,9 +140,15 @@
           </label>
 
           <label>
-            <span>Country / region</span>
+            <span>Country</span>
             <input id="report-country" maxlength="2" placeholder="CN" required />
-            <small>ISO 3166-1 alpha-2, e.g. CN, JP, DE</small>
+            <small>ISO 3166-1 alpha-2, e.g. CN, US, DE</small>
+          </label>
+
+          <label>
+            <span>Region / state / province</span>
+            <input id="report-subdivision" maxlength="8" placeholder="CN-SH" />
+            <small>ISO 3166-2 first-level subdivision, e.g. CN-SH, US-TX, DE-BB. Known facilities fill this automatically.</small>
           </label>
 
           <label>
@@ -130,7 +182,7 @@
         <div>
           <p class="eyebrow">Public record preview</p>
           <h3>What the future intake API would receive</h3>
-          <p class="muted">Known factories use a canonical facility ID. An unlisted site stays separate as fallback text instead of pretending to be a verified facility entity.</p>
+          <p class="muted">Known factories use a canonical facility ID. An unlisted site stays separate as fallback text. Region is stored at country / first-level subdivision granularity.</p>
         </div>
         <pre id="record-preview" aria-live="polite">No local report yet.</pre>
         <p class="contract-note">Rate-limit signals, network addresses, moderation notes, and optional future employment proof belong to a private intake layer and must not be silently added to the public observation export.</p>
@@ -143,12 +195,12 @@
         <p>Publish the distribution. Let workers, consumers, researchers, and buyers decide what it means.</p>
       </article>
       <article>
-        <h3>Count the labor that is actually used</h3>
-        <p>Direct employment is not the only relevant relationship. Dispatch, outsourcing, and on-site service remain visible.</p>
+        <h3>Compare like with like</h3>
+        <p>Brand, employment identity, and geography remain separate dimensions so regional gaps can be inspected without baking a judgement into one score.</p>
       </article>
       <article>
         <h3>Keep identity out of the public record</h3>
-        <p>The core dataset needs working-time observations and entity references, not names or employee profiles.</p>
+        <p>The core dataset needs working-time observations and coarse entity references, not names or employee profiles.</p>
       </article>
     </section>
   </main>
@@ -160,5 +212,6 @@
 
   <script type="module" src="./app.js"></script>
   <script type="module" src="./facility.js"></script>
+  <script type="module" src="./geography.js"></script>
 </body>
 </html>
