@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime release-time analysis record",
+  "description": "Derived manufacturing-relevance result for one accepted report under one frozen publication methodology and manufacturing-scope version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_id",
+    "methodology_version",
+    "scope_version",
+    "analysis_weight",
+    "analysis_flags"
+  ],
+  "properties": {
+    "report_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "methodology_version": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "scope_version": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "analysis_weight": { "type": "number", "minimum": 0, "maximum": 1 },
+    "analysis_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "manufacturing_frontline",
+          "manufacturing_support",
+          "management_role",
+          "sales_role",
+          "corporate_function_role",
+          "unknown_role",
+          "high_income_5x",
+          "known_brand_facility",
+          "inside_curated_manufacturing_scope",
+          "outside_curated_manufacturing_scope",
+          "scope_partial",
+          "scope_not_curated",
+          "location_missing"
+        ]
+      },
+      "uniqueItems": true
+    }
+  }
+}
