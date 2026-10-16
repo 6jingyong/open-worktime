@@ -12,7 +12,7 @@ The initial consumer-facing question is:
 
 ## 2. Why a distribution, not a score
 
-A single company can contain very different labor regimes at the same time. Direct hires, dispatched workers, outsourced workers, and on-site service workers may have materially different schedules.
+A single brand can contain very different labor regimes at the same time. Direct hires, dispatched workers, outsourced workers, and on-site service workers may have materially different schedules.
 
 The public default is therefore a weekly-hours histogram. Employment identity is a filter, not a hidden weighting factor.
 
@@ -20,25 +20,30 @@ The project does not convert those observations into a moral score.
 
 ## 3. Core entities
 
-The MVP keeps the entity graph simple:
+The current graph separates entity facts, supply-chain evidence, and worker observations:
 
 ```text
 brand
-  └─ production site (optional in v0.1)
-       └─ observations
-            ├─ employment identity
-            ├─ weekly-hours bucket
-            ├─ country
-            └─ observation timestamp
+  ├─ owner_company_id → company
+  └─ facility-link evidence → facility
+
+report
+  ├─ brand_id → brand
+  ├─ facility_id → canonical facility (optional)
+  ├─ facility_text → unresolved site fallback (optional)
+  ├─ employment identity
+  └─ weekly-hours bucket
 ```
 
-Future entity resolution can map brands to owners and facilities to stable external IDs such as Open Supply Hub identifiers. External datasets should not be imported until license compatibility is explicitly confirmed.
+A facility existing in the catalog is not proof that a brand uses it. A brand-to-facility relationship therefore has its own cited evidence edge.
+
+A real brand or facility in the catalog is also not a labor-condition claim. Working-time reports are a separate layer.
 
 ## 4. Observation semantics
 
 Contributors report their **average actual weekly working time over the last four complete weeks**.
 
-The MVP buckets are half-open intervals:
+The fixed buckets are:
 
 - `<35`
 - `35 <= h < 40`
@@ -51,7 +56,9 @@ The MVP buckets are half-open intervals:
 - `70 <= h < 75`
 - `75+`
 
-The project is interested in actual labor time, not merely contractual hours or whether a company labels itself as "two-day weekend".
+The project measures actual labor time, not merely contractual hours or whether a company labels itself as "two-day weekend".
+
+The period rule is machine-readable as `period_basis = last_4_complete_weeks` so different clients do not silently ask different questions.
 
 ## 5. Employment identity
 
@@ -63,9 +70,36 @@ The initial categories are:
 - `onsite_service`
 - `other_unknown`
 
-These categories are kept visible because shifting long-hour work into dispatch or outsourcing should not make it disappear from the public picture.
+These categories remain visible because shifting long-hour work into dispatch or outsourcing should not make it disappear from the public picture.
 
-## 6. Data-quality philosophy
+## 6. Facility resolution
+
+Known and unknown production sites are deliberately different fields:
+
+- `facility_id`: canonical facility entity in the Open Worktime catalog;
+- `facility_text`: unresolved contributor-supplied fallback.
+
+A user-entered factory name must never be treated as a verified facility ID merely because it was typed into the site field.
+
+The current pilot uses an Open Supply Hub OS ID for one PUMA-linked facility. Bulk facility import and automatic matching remain out of scope.
+
+## 7. Public observation vs private intake
+
+The public observation is intentionally small. It does not need a worker's name, email, phone number, employee ID, exact job title, salary, gender, age, documents, or written story.
+
+A future ingestion backend may still need restricted operational metadata for:
+
+- rate limiting;
+- abuse resistance;
+- moderation state;
+- optional employment verification;
+- receipt tracking.
+
+Those fields belong to a **private intake layer** and must not be silently appended to public exports.
+
+See [`COMMUNITY_INTAKE.md`](COMMUNITY_INTAKE.md).
+
+## 8. Data-quality philosophy
 
 The first principle is **show the raw shape before inventing a score**.
 
@@ -79,78 +113,62 @@ Useful quality signals can include:
 
 A multi-peak distribution is not itself proof of manipulation. It may reflect genuine workforce segmentation. The prototype therefore only surfaces a shape warning and never edits the histogram automatically.
 
-## 7. Separation of community and public dataset
+## 9. Public dataset layer
 
-Open Worktime treats these as different systems:
+Accepted data should eventually support:
 
-### Community input layer
-
-Responsible for:
-
-- anonymous submission;
-- rate limiting;
-- abuse resistance;
-- optional employment verification;
-- moderation and dispute handling;
-- privacy protection.
-
-### Public dataset layer
-
-Responsible for:
-
-- accepted observations or privacy-preserving aggregates;
 - reproducible snapshots;
 - stable schemas;
 - hashes and signatures;
 - mirrors;
-- later Torrent/IPFS distribution.
+- later Torrent/IPFS distribution;
+- independent clients rendering the same snapshot.
 
-The website should never become the only copy of accepted public data.
+The website must not become the only copy of accepted public data.
 
-## 8. Prototype implementation
+## 10. Current prototype
 
-v0.1 is deliberately static:
+The current client remains static HTML/CSS/JavaScript on GitHub Pages.
 
-```text
-index.html
-styles.css
-app.js
-data/brands.json
-data/demo-distribution.json
-schema/report.schema.json
-```
+It already proves:
 
-Prototype submissions stay in browser `localStorage`. They are not uploaded anywhere. Users can export those local observations as JSON to exercise the eventual portable-data workflow.
+- brand → owner resolution;
+- evidence-backed brand → facility links;
+- weekly-hours histograms;
+- employment-identity filters;
+- facility-aware local report creation;
+- privacy-minimal report schema v0.2;
+- JSON export;
+- migration of older browser-local v0.1 demo reports.
 
-This lets the team validate the product interaction before deciding on authentication, database infrastructure, moderation, or anti-abuse technology.
+Prototype reports still stay in browser `localStorage`. No real anonymous submission backend exists yet.
 
-## 9. Suggested next milestones
+## 11. Next milestones
 
-### v0.2 — real community ingestion
+### Community ingestion backend
 
-- minimal anonymous submission API;
-- server-side schema validation;
-- rate limiting and abuse logging that avoids unnecessary personal data retention;
-- append-only accepted observation store;
-- public aggregate endpoint / snapshot export.
+- minimal anonymous `POST /v1/reports` endpoint;
+- server-side v0.2 schema validation;
+- rate limiting with minimal retention of network metadata;
+- pending/accepted/rejected moderation state;
+- opaque receipt IDs;
+- aggregate/snapshot publication after privacy review.
 
-### v0.3 — trust and entity resolution
+### Trust and privacy
 
 - optional proof-of-employment verification without publishing identity;
-- brand-owner mapping;
-- production-site IDs;
-- country/site/identity slices;
-- visible sample-quality metadata.
+- minimum sample thresholds for small site/identity slices;
+- visible sample-quality metadata;
+- time-decay or historical windows without rewriting raw accepted observations.
 
-### v0.4 — resilient distribution
+### Resilient distribution
 
 - signed dataset manifest;
 - immutable versioned snapshots;
 - multiple HTTP/Git mirrors;
-- Torrent and/or IPFS publication;
-- independent clients able to verify and render the same snapshot.
+- Torrent and/or IPFS publication.
 
-## 10. Non-goals for now
+## 12. Non-goals for now
 
 Do not add these until the basic data loop has real users:
 
