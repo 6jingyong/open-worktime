@@ -19,8 +19,9 @@ const EMPLOYMENT_TYPES = [
   { id: 'other_unknown', label: 'Other / unknown', zh: '其他 / 不确定' }
 ];
 
-const STORAGE_KEY = 'open-worktime-local-reports-v0.2';
-const LEGACY_STORAGE_KEY = 'open-worktime-local-reports-v0.1';
+const STORAGE_KEY = 'open-worktime-local-reports-v0.3';
+const LEGACY_STORAGE_KEY_V02 = 'open-worktime-local-reports-v0.2';
+const LEGACY_STORAGE_KEY_V01 = 'open-worktime-local-reports-v0.1';
 const PERIOD_BASIS = 'last_4_complete_weeks';
 
 const state = {
@@ -30,7 +31,8 @@ const state = {
   demoDistribution: [],
   localReports: loadLocalReports(),
   selectedBrandId: null,
-  employmentFilter: 'all'
+  employmentFilter: 'all',
+  geographyFilter: 'all'
 };
 
 const els = {
@@ -42,11 +44,13 @@ const els = {
   brandSource: document.querySelector('#brand-source'),
   sampleCount: document.querySelector('#sample-count'),
   employmentFilters: document.querySelector('#employment-filters'),
+  geographyFilters: document.querySelector('#geography-filters'),
   histogram: document.querySelector('#histogram'),
   shapeNote: document.querySelector('#shape-note'),
   reportForm: document.querySelector('#report-form'),
   reportBrand: document.querySelector('#report-brand'),
   reportCountry: document.querySelector('#report-country'),
+  reportSubdivision: document.querySelector('#report-subdivision'),
   reportFacility: document.querySelector('#report-facility'),
   reportEmployment: document.querySelector('#report-employment'),
   reportHours: document.querySelector('#report-hours'),
@@ -143,15 +147,59 @@ function renderEmploymentFilters() {
   }
 }
 
+function renderGeographyFilters() {
+  if (!els.geographyFilters) return;
+
+  const filters = [{ id: 'all', label: 'All regions' }, ...collectBrandGeographies(state.selectedBrandId)];
+  els.geographyFilters.innerHTML = '';
+
+  for (const filter of filters) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `chip${state.geographyFilter === filter.id ? ' active' : ''}`;
+    button.textContent = filter.label;
+    button.addEventListener('click', () => {
+      state.geographyFilter = filter.id;
+      renderGeographyFilters();
+      renderBrand();
+    });
+    els.geographyFilters.appendChild(button);
+  }
+}
+
+function collectBrandGeographies(brandId) {
+  if (!brandId) return [];
+  const countries = new Set();
+  const subdivisions = new Set();
+
+  const rows = [
+    ...state.demoDistribution.filter((row) => row.brand_id === brandId),
+    ...state.localReports.filter((row) => row.brand_id === brandId)
+  ];
+
+  for (const row of rows) {
+    if (row.country) countries.add(row.country);
+    const subdivision = effectiveSubdivision(row);
+    if (subdivision) subdivisions.add(subdivision);
+  }
+
+  return [
+    ...[...countries].sort().map((code) => ({ id: `country:${code}`, label: code })),
+    ...[...subdivisions].sort().map((code) => ({ id: `subdivision:${code}`, label: code }))
+  ];
+}
+
 function selectBrand(brandId) {
   const brand = state.brands.find((item) => item.id === brandId);
   if (!brand) return;
 
   state.selectedBrandId = brand.id;
   state.employmentFilter = 'all';
+  state.geographyFilter = 'all';
   els.brandSearch.value = brand.name;
   els.reportBrand.value = brand.id;
   renderEmploymentFilters();
+  renderGeographyFilters();
   renderBrand();
   document.querySelector('#brand-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -161,7 +209,7 @@ function renderBrand() {
   if (!brand) return;
 
   const owner = getOwner(brand);
-  const counts = aggregateCounts(brand.id, state.employmentFilter);
+  const counts = aggregateCounts(brand.id, state.employmentFilter, state.geographyFilter);
   const total = counts.reduce((sum, value) => sum + value, 0);
   const maxCount = Math.max(1, ...counts);
 
@@ -188,8 +236,8 @@ function renderBrand() {
     const empty = document.createElement('div');
     empty.className = 'empty-chart';
     empty.innerHTML = `
-      <strong>No working-time observations yet.</strong>
-      <span>${brand.demo ? 'This demo entity has no observations under the current filter.' : 'The entity metadata above is real catalog data; Open Worktime currently bundles no labor-condition claim for this brand.'}</span>
+      <strong>No working-time observations under the current filters.</strong>
+      <span>${brand.demo ? 'This demo entity may not have geography metadata for every bundled row.' : 'Entity metadata can exist without any labor-condition observation for this brand or region.'}</span>
     `;
     els.histogram.appendChild(empty);
     return;
@@ -240,12 +288,13 @@ function getOwner(brand) {
   return state.companies.find((company) => company.id === brand.owner_company_id) ?? null;
 }
 
-function aggregateCounts(brandId, employmentFilter) {
+function aggregateCounts(brandId, employmentFilter, geographyFilter) {
   const counts = HOURS_BUCKETS.map(() => 0);
 
   for (const row of state.demoDistribution) {
     if (row.brand_id !== brandId) continue;
     if (employmentFilter !== 'all' && row.employment_type !== employmentFilter) continue;
+    if (!matchesGeography(row, geographyFilter)) continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === row.weekly_hours_bucket);
     if (index >= 0) counts[index] += Number(row.count) || 0;
   }
@@ -253,11 +302,25 @@ function aggregateCounts(brandId, employmentFilter) {
   for (const report of state.localReports) {
     if (report.brand_id !== brandId) continue;
     if (employmentFilter !== 'all' && report.employment_type !== employmentFilter) continue;
+    if (!matchesGeography(report, geographyFilter)) continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === report.weekly_hours_bucket);
     if (index >= 0) counts[index] += 1;
   }
 
   return counts;
+}
+
+function matchesGeography(row, filter) {
+  if (filter === 'all') return true;
+  if (filter.startsWith('country:')) return row.country === filter.slice('country:'.length);
+  if (filter.startsWith('subdivision:')) return effectiveSubdivision(row) === filter.slice('subdivision:'.length);
+  return false;
+}
+
+function effectiveSubdivision(row) {
+  if (row?.subdivision_code) return row.subdivision_code;
+  if (!row?.facility_id) return null;
+  return state.facilities.find((facility) => facility.id === row.facility_id)?.subdivision_code ?? null;
 }
 
 function detectSeparatedPeaks(counts) {
@@ -281,7 +344,7 @@ function detectSeparatedPeaks(counts) {
       const valley = Math.min(...counts.slice(first + 1, second));
       const smallerPeak = Math.min(counts[first], counts[second]);
       if (valley <= smallerPeak * 0.45) {
-        return 'Separated peaks detected. This can be real workforce segmentation (site, role, employment identity) or a sign of sample contamination. The chart is not automatically corrected; inspect the identity filters and site-level data.';
+        return 'Separated peaks detected. This can be real workforce segmentation (site, role, employment identity, or region) or a sign of sample contamination. The chart is not automatically corrected; inspect identity and geography filters.';
       }
     }
   }
@@ -321,12 +384,21 @@ els.brandSearch.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') handleBrandSearch();
 });
 
+els.reportFacility.addEventListener('input', () => {
+  const knownFacility = resolveKnownFacility(els.reportFacility.value.trim());
+  if (!knownFacility) return;
+  els.reportCountry.value = knownFacility.country;
+  if (els.reportSubdivision && knownFacility.subdivision_code) {
+    els.reportSubdivision.value = knownFacility.subdivision_code;
+  }
+});
+
 els.reportForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
   const country = els.reportCountry.value.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(country)) {
-    els.formStatus.textContent = 'Country / region must be a two-letter ISO code, such as CN, JP, or DE.';
+    els.formStatus.textContent = 'Country must be a two-letter ISO code, such as CN, US, or DE.';
     return;
   }
 
@@ -337,10 +409,29 @@ els.reportForm.addEventListener('submit', (event) => {
     return;
   }
 
+  const rawSubdivision = els.reportSubdivision?.value.trim().toUpperCase() ?? '';
+  const subdivisionCode = knownFacility?.subdivision_code ?? rawSubdivision || null;
+
+  if (subdivisionCode && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
+    els.formStatus.textContent = 'Region must use an ISO 3166-2 code such as CN-SH, US-TX, or DE-BB.';
+    return;
+  }
+
+  if (subdivisionCode && !subdivisionCode.startsWith(`${country}-`)) {
+    els.formStatus.textContent = `Region ${subdivisionCode} does not match country ${country}.`;
+    return;
+  }
+
+  if (knownFacility?.subdivision_code && rawSubdivision && rawSubdivision !== knownFacility.subdivision_code) {
+    els.formStatus.textContent = `That known facility is cataloged in ${knownFacility.subdivision_code}.`;
+    return;
+  }
+
   const submission = {
-    schema_version: '0.2',
+    schema_version: '0.3',
     brand_id: els.reportBrand.value,
     country,
+    subdivision_code: subdivisionCode,
     facility_id: knownFacility?.id ?? null,
     facility_text: facilityInput && !knownFacility ? facilityInput : null,
     employment_type: els.reportEmployment.value,
@@ -359,13 +450,13 @@ els.reportForm.addEventListener('submit', (event) => {
   saveLocalReports();
   renderRecordPreview(submission);
   selectBrand(report.brand_id);
-  els.formStatus.textContent = 'Saved locally. The preview shows only the future client submission payload; receipt time and report ID are added separately. Nothing was uploaded.';
+  els.formStatus.textContent = 'Saved locally. Region is coarse by design; no precise worker location is collected. Nothing was uploaded.';
   els.reportFacility.value = '';
 });
 
 els.exportButton.addEventListener('click', () => {
   const payload = {
-    export_version: '0.2',
+    export_version: '0.3',
     exported_at: new Date().toISOString(),
     reports: state.localReports
   };
@@ -388,6 +479,7 @@ els.clearButton.addEventListener('click', () => {
   if (!window.confirm('Clear all local prototype submissions stored in this browser?')) return;
   state.localReports = [];
   saveLocalReports();
+  renderGeographyFilters();
   renderBrand();
   renderRecordPreview(null);
   els.formStatus.textContent = 'Local prototype submissions cleared.';
@@ -405,9 +497,10 @@ function resolveKnownFacility(value) {
 function toSubmissionPayload(report) {
   if (!report) return null;
   return {
-    schema_version: '0.2',
+    schema_version: '0.3',
     brand_id: report.brand_id,
     country: report.country,
+    subdivision_code: effectiveSubdivision(report),
     facility_id: report.facility_id ?? null,
     facility_text: report.facility_text ?? null,
     employment_type: report.employment_type,
@@ -434,14 +527,17 @@ function loadLocalReports() {
       return Array.isArray(parsed) ? parsed : [];
     }
 
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (!legacy) return [];
-    const parsedLegacy = JSON.parse(legacy);
-    if (!Array.isArray(parsedLegacy)) return [];
+    for (const legacyKey of [LEGACY_STORAGE_KEY_V02, LEGACY_STORAGE_KEY_V01]) {
+      const legacy = localStorage.getItem(legacyKey);
+      if (!legacy) continue;
+      const parsedLegacy = JSON.parse(legacy);
+      if (!Array.isArray(parsedLegacy)) continue;
+      const migrated = parsedLegacy.map(migrateLegacyReport);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
 
-    const migrated = parsedLegacy.map(migrateLegacyReport);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    return migrated;
+    return [];
   } catch {
     return [];
   }
@@ -451,22 +547,24 @@ function migrateLegacyReport(report) {
   const rawFacility = String(report.facility_id ?? '').trim();
   const looksCanonical = rawFacility.startsWith('osh-');
   return {
-    schema_version: '0.2',
+    schema_version: '0.3',
     id: report.id ?? `legacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     brand_id: report.brand_id,
     country: report.country,
+    subdivision_code: report.subdivision_code ?? null,
     facility_id: looksCanonical ? rawFacility : null,
-    facility_text: rawFacility && !looksCanonical ? rawFacility : null,
+    facility_text: report.facility_text ?? (rawFacility && !looksCanonical ? rawFacility : null),
     employment_type: report.employment_type,
     weekly_hours_bucket: report.weekly_hours_bucket,
     period_basis: PERIOD_BASIS,
-    submitted_at: report.observed_at ?? new Date().toISOString(),
+    submitted_at: report.submitted_at ?? report.observed_at ?? new Date().toISOString(),
     source: 'local_prototype'
   };
 }
 
 function saveLocalReports() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.localReports));
+  window.dispatchEvent(new CustomEvent('open-worktime:reports-changed'));
 }
 
 function escapeHtml(value) {
