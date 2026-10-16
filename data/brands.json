@@ -174,5 +174,22 @@
       "license": "CC BY 4.0",
       "verified_at": "2026-09-16"
     }
+  },
+  {
+    "id": "bt-puma",
+    "name": "PUMA",
+    "aliases": ["Puma"],
+    "sector": "Apparel, footwear and accessories",
+    "home_country": "DE",
+    "origin_country": "DE",
+    "owner_company_id": "bt-puma-se",
+    "demo": false,
+    "source": {
+      "provider": "Brandtree",
+      "record_id": "puma",
+      "url": "https://brandtree.org/company/puma",
+      "license": "CC BY 4.0",
+      "verified_at": "2026-09-16"
+    }
   }
 ]
