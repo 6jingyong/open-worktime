@@ -94,11 +94,12 @@ Open Worktime does not need to publish every submission as an authoritative stat
 A nonprofit or community operator can publish monthly, quarterly, or on another explicit cadence:
 
 1. collect raw observations continuously;
-2. freeze a report cutoff;
-3. refresh brand manufacturing countries / regions / facilities;
-4. freeze a versioned `scope_version`;
-5. derive manufacturing weights from that frozen scope and methodology;
-6. publish raw sample counts plus weighted histograms.
+2. review pending reports for spam / duplicate / malformed / privacy-risk cases;
+3. freeze a report cutoff and export accepted raw observations;
+4. refresh brand manufacturing countries / regions / facilities;
+5. freeze a versioned `scope_version`;
+6. derive manufacturing weights from that frozen scope and methodology;
+7. publish raw sample counts plus weighted histograms.
 
 Raw observations are not rewritten when the scope database improves.
 
@@ -126,6 +127,8 @@ The repository also contains a **disabled-by-default anonymous intake backend** 
 - server-assigned receipt ID and receipt time;
 - no public report-reading endpoint;
 - no IP column and no release-time weight stored in the intake table;
+- local/remote operator CLI for pending review, moderation-state counts, accepted/rejected transitions, accepted-raw export, and private D1 backup;
+- moderation reasons intentionally limited to abuse/data-quality cases rather than manufacturing-relevance judgments;
 - unit tests that run without a Cloudflare account.
 
 `backend/wrangler.jsonc` ships with `WRITE_ENABLED = false` and no D1 binding. Merging the backend code therefore does **not** start collecting real worker data. See [`backend/README.md`](backend/README.md).
@@ -153,6 +156,8 @@ The client submits facts only:
 ```
 
 The intake server attaches only receipt metadata such as report ID, authoritative receipt time, and source label. New submissions first enter private storage as `pending`.
+
+Moderation decides only whether a raw observation is usable/abusive. It does not decide manufacturing relevance. Accepted raw observations can then be exported at a fixed cutoff without private moderation fields.
 
 A later report build derives a separate record containing:
 
@@ -186,4 +191,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. The intake backend contract and storage skeleton now exist but remain intentionally disabled. The next operational work is abuse resistance + moderation, then explicit backend activation; the next publication work is a reproducible monthly/quarterly release pipeline.
+Prototype / pre-community-data. Intake, private moderation, accepted-raw export, and private backup paths now exist but public writes remain intentionally disabled. The next operational work is abuse resistance plus an explicit retention policy; the next publication work is minimum-sample privacy thresholds and a reproducible monthly/quarterly release builder.

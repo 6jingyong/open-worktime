@@ -22,6 +22,8 @@ jobs:
           node --check geography.js
           node --check backend/src/index.js
           node --check backend/src/validate.js
+          node --check backend/operator/lib.mjs
+          node --check backend/operator/cli.mjs
 
       - name: Validate JSON files
         run: |
@@ -203,13 +205,17 @@ jobs:
           }
           JS
 
-      - name: Validate anonymous intake backend privacy boundaries
+      - name: Validate anonymous intake and moderation privacy boundaries
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          sql = Path('backend/migrations/0001_init.sql').read_text().lower()
+          migrations = '\n'.join(
+              path.read_text().lower()
+              for path in sorted(Path('backend/migrations').glob('*.sql'))
+          )
           worker = Path('backend/src/index.js').read_text().lower()
+          operator_lib = Path('backend/operator/lib.mjs').read_text().lower()
           config = Path('backend/wrangler.jsonc').read_text()
 
           forbidden_storage = [
@@ -217,15 +223,23 @@ jobs:
               'email', 'phone', 'employee_id', 'exact_salary', 'gps'
           ]
           for term in forbidden_storage:
-              assert term not in sql, f'private intake SQL must not store {term}'
+              assert term not in migrations, f'private intake SQL must not store {term}'
 
           assert 'cf-connecting-ip' not in worker, 'worker must not persist or depend on visitor IP by default'
           assert 'x-forwarded-for' not in worker, 'worker must not persist or depend on forwarded IP by default'
-          assert 'moderation_state' in sql and "'pending'" in sql
+          assert 'moderation_state' in migrations and "'pending'" in migrations
+          assert 'reviewed_at' in migrations and 'moderation_reason' in migrations
           assert '"WRITE_ENABLED": "false"' in config, 'checked-in worker config must keep writes disabled'
+
+          for forbidden_reject_reason in [
+              "'sales'", "'management'", "'high_income'", "'location_mismatch'"
+          ]:
+              assert forbidden_reject_reason not in operator_lib, (
+                  'manufacturing relevance must not become a moderation rejection reason'
+              )
           PY
 
-      - name: Test anonymous intake backend
+      - name: Test anonymous intake backend and operator tools
         run: node --test backend/test/*.test.mjs
 
       - name: Check required static files
@@ -243,6 +257,7 @@ jobs:
           test -s docs/COMMUNITY_INTAKE.md
           test -s docs/GEOGRAPHY.md
           test -s docs/PUBLICATION_CYCLE.md
+          test -s docs/MODERATION.md
           test -s data/ATTRIBUTION.md
           test -s data/manufacturing-scope.json
           test -s backend/README.md
@@ -250,4 +265,7 @@ jobs:
           test -s backend/wrangler.jsonc
           test -s backend/src/index.js
           test -s backend/src/validate.js
+          test -s backend/operator/lib.mjs
+          test -s backend/operator/cli.mjs
           test -s backend/migrations/0001_init.sql
+          test -s backend/migrations/0002_moderation_audit.sql

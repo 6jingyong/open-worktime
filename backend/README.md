@@ -59,7 +59,7 @@ cd backend
 npm test
 ```
 
-The tests cover schema normalization, unexpected-field rejection, write-disable behavior, CORS, D1 insertion shape, and receipt-only responses.
+The tests cover schema normalization, unexpected-field rejection, write-disable behavior, CORS, D1 insertion shape, receipt-only responses, moderation semantics, and accepted-report export privacy.
 
 ## Local Worker development
 
@@ -111,6 +111,86 @@ Then run:
 npm run dev
 ```
 
+## Operator workflow
+
+Moderation is intentionally a command-line workflow rather than a public/admin web API. By default every command targets local D1. Add `--remote` explicitly to touch the production database.
+
+From `backend/`:
+
+```bash
+# inspect pending reports
+npm run operator -- list --limit 50
+
+# counts by moderation state
+npm run operator -- stats
+
+# accept one report
+npm run operator -- accept rpt_<uuid>
+
+# reject an abusive/unusable report
+npm run operator -- reject rpt_<uuid> --reason spam
+
+# repeat any command against production only when intended
+npm run operator -- list --remote
+```
+
+Allowed rejection reasons are deliberately narrow:
+
+- `spam`
+- `duplicate`
+- `malformed`
+- `privacy_risk`
+- `test_submission`
+- `other`
+
+**Do not reject a report because it is sales, management, high-income, or outside a reviewed manufacturing region.** Those observations can remain valid raw reports while receiving low or zero manufacturing relevance in a publication release.
+
+Migration `0002_moderation_audit.sql` adds only `reviewed_at` and a coarse `moderation_reason`; it does not identify the reviewer.
+
+## Accepted raw export
+
+A release should use an explicit cutoff. The operator tool exports only accepted raw observations and strips private moderation fields:
+
+```bash
+npm run operator -- export-accepted \
+  --cutoff 2026-12-31T23:59:59Z \
+  --out ../private-work/accepted-2026-q4.json \
+  --remote
+```
+
+The output contains:
+
+- `export_version = accepted-raw-v1`;
+- normalized cutoff;
+- export timestamp;
+- report count;
+- only fields allowed by the accepted raw observation contract.
+
+It does **not** contain `moderation_state`, `moderation_reason`, or `reviewed_at`, and it does not contain release-time weights.
+
+## Private database backup
+
+A full D1 backup is operational/private material, not a public dataset artifact:
+
+```bash
+npm run operator -- backup \
+  --out ../private-work/intake-backup.sql \
+  --remote
+```
+
+Keep private backups outside the public repository. The repository intentionally does not contain a backup directory.
+
+## Retention boundary
+
+No automatic deletion rule is encoded yet because the eventual operator must adopt the policy explicitly. The intended separation is:
+
+- accepted observations: eligible for reviewed public snapshots;
+- pending observations: private until reviewed;
+- rejected observations: private operational material, never part of a public release;
+- public release artifacts: should be reproducible from an accepted-raw export plus frozen methodology/scope.
+
+Before production launch, the operator should set an explicit retention duration for pending and rejected rows and document how private backups inherit that policy.
+
 ## Before enabling public writes
 
 Do **not** change `WRITE_ENABLED` to `true` merely because the Worker deploys successfully.
@@ -118,16 +198,16 @@ Do **not** change `WRITE_ENABLED` to `true` merely because the Worker deploys su
 Before a real launch, the operator should also decide and test:
 
 - abuse / bot controls;
-- moderation workflow for `pending → accepted / rejected`;
-- retention rules for any private operational metadata;
+- retention duration for pending/rejected operational data;
 - minimum publication thresholds for small worker slices;
-- backup and export procedure for the D1 raw-observation store.
+- production D1 binding and backup location;
+- recovery procedure from a private backup.
 
-Only after those controls exist should the D1 binding be configured in production and `WRITE_ENABLED` become `true`.
+The moderation/export workflow now exists, but public intake should remain disabled until those remaining controls are in place.
 
 ## Storage model
 
-`migrations/0001_init.sql` creates only the private intake table and indexes.
+`migrations/0001_init.sql` creates the private intake table and indexes.
 
 Each row contains worker-supplied v0.4 fields plus:
 
@@ -136,6 +216,11 @@ Each row contains worker-supplied v0.4 fields plus:
 - `source = community_report`;
 - `moderation_state = pending | accepted | rejected`.
 
-It does not contain release-time `analysis_weight` or `analysis_flags`.
+`migrations/0002_moderation_audit.sql` adds:
+
+- `reviewed_at`;
+- coarse `moderation_reason`.
+
+The intake database does not contain release-time `analysis_weight` or `analysis_flags`.
 
 That separation lets a later report recompute the same accepted observation under a newer manufacturing-scope database without rewriting the historical intake record.
