@@ -1,133 +1,140 @@
 # Community intake contract
 
-Open Worktime should eventually accept real worker reports, but the client submission, the private anti-abuse system, and the accepted public observation are three different things.
+Open Worktime separates three things:
+
+1. what the contributor submits;
+2. private anti-abuse / moderation metadata;
+3. the accepted public observation.
 
 ## Client submission
 
-The browser should send only the facts supplied by the contributor:
+The browser sends facts only:
 
 ```json
 {
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "brand_id": "bt-puma",
   "country": "CN",
-  "subdivision_code": "CN-JS",
+  "work_region": "Jiangsu",
   "facility_id": "osh-CN2021159RK49KG",
   "facility_text": null,
   "employment_type": "labor_dispatch",
+  "work_role": "manufacturing_frontline",
+  "high_income_5x": "no",
   "weekly_hours_bucket": "55_60",
   "period_basis": "last_4_complete_weeks"
 }
 ```
 
-This payload is defined by `schema/submission.schema.json`.
+`country` and `work_region` are nullable. A contributor can leave geography blank without losing manufacturing relevance.
 
-The client does **not** get to choose the authoritative receipt time, public report ID, or public source label.
+`work_role` is intentionally broad. The project does not need exact job titles.
 
-`subdivision_code` is deliberately coarse. It should be an ISO 3166-2 first-level region when available, such as `CN-SH`, `US-TX`, or `DE-BB`. The public intake contract does not ask for a worker's home address, GPS location, or private street address.
+`high_income_5x` is only `yes / no / unknown`; no salary amount is collected.
+
+The client cannot choose report ID, receipt time, source label, analysis weight, or analysis flags.
 
 ## Accepted public observation
 
-After intake validation, the server can attach receipt metadata and produce a public record:
+After validation the server may publish:
 
 ```json
 {
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "id": "opaque-server-id",
   "brand_id": "bt-puma",
   "country": "CN",
-  "subdivision_code": "CN-JS",
+  "work_region": "Jiangsu",
   "facility_id": "osh-CN2021159RK49KG",
   "facility_text": null,
   "employment_type": "labor_dispatch",
+  "work_role": "manufacturing_frontline",
+  "high_income_5x": "no",
   "weekly_hours_bucket": "55_60",
   "period_basis": "last_4_complete_weeks",
-  "submitted_at": "2026-10-16T04:10:00Z",
+  "analysis_weight": 1,
+  "analysis_flags": ["manufacturing_frontline", "known_brand_facility"],
+  "submitted_at": "2026-10-16T05:30:00Z",
   "source": "community_report"
 }
 ```
 
-This accepted record is defined by `schema/report.schema.json`.
+The weight is public and explainable; it is not a hidden deletion rule.
 
-If a production site is not yet in the facility catalog, `facility_id` remains `null` and `facility_text` may contain a short site name. The fallback text is not a verified facility identity.
+## Default weighting rule
 
-## Fields intentionally not collected in the public record
+Current prototype base weights:
 
-The core dataset does not need:
+- manufacturing frontline: `1.0`;
+- manufacturing support: `1.0`;
+- management: `0.25`;
+- sales: `0`;
+- corporate / functional role: `0`;
+- other / unknown: `0.5`.
+
+If `high_income_5x = yes`, weight is capped at `0.25`.
+
+Employment identity itself does **not** reduce weight. Direct employees, dispatch labor, outsourcing, and on-site service remain separately visible because outsourcing should not erase labor from the dataset.
+
+### Location evidence
+
+- a canonical facility with an evidence-backed link to the selected brand gets `known_brand_facility`;
+- a canonical facility known to the catalog but not linked to the selected brand is capped at `0.25` and receives `location_mismatch_review`;
+- free-text region / site data that cannot yet be resolved receives `location_unresolved` but is not automatically penalized today.
+
+The last rule is deliberate: the current facility catalog is incomplete. A future backend may safely use brand × region mismatch more strongly only when the underlying manufacturing-location coverage is good enough.
+
+## Fields intentionally not collected
+
+The public/core record does not need:
 
 - worker name;
 - personal email or phone number;
 - employee ID;
 - exact job title;
-- salary;
+- exact salary;
 - gender or age;
-- written narrative;
-- uploaded documents;
 - home address;
-- GPS coordinate or precise private location.
-
-This is deliberate data minimization, not an incomplete profile.
+- GPS coordinate;
+- written narrative;
+- uploaded documents.
 
 ## Private intake metadata
 
-A future backend may need temporary or restricted metadata for abuse resistance, for example rate-limit state, moderation decisions, optional employment-verification results, or network-derived abuse signals.
+A real backend may still need restricted data for:
 
-Those fields belong in a separate private intake system. They must not be silently appended to the public observation export.
+- rate limiting;
+- abuse resistance;
+- moderation state;
+- optional employment verification;
+- receipt tracking.
 
-Network identifiers should be retained only as long as necessary for abuse prevention. If hashing or other pseudonymous fingerprints are used, they should still be treated as sensitive operational metadata rather than public data.
+Those fields belong to a private intake layer and must not leak into public exports.
 
-## Backend contract
-
-A minimal future endpoint can be conceptually simple:
+## Backend outline
 
 ```text
 POST /v1/reports
 Content-Type: application/json
 ```
 
-Request body: one object valid under `schema/submission.schema.json`.
-
 The server should:
 
-1. validate the submission schema;
-2. resolve or quarantine unknown entity references rather than inventing them;
-3. validate that `country`, `subdivision_code`, and any canonical facility do not contradict one another;
-4. apply rate limits and abuse checks outside the public record;
-5. assign an opaque receipt/report ID;
-6. assign the authoritative `submitted_at` receipt time and `source = community_report`;
-7. place the report into a pending/accepted/rejected moderation state;
-8. publish only accepted observations or privacy-preserving aggregates.
+1. validate `schema/submission.schema.json`;
+2. resolve known entities when possible;
+3. accept missing or unresolved geography rather than inventing facts;
+4. derive `analysis_weight` and `analysis_flags` from public rules plus evidence-backed entity matching;
+5. apply private rate-limit / abuse checks;
+6. assign opaque ID, receipt time, and source;
+7. move the report through pending / accepted / rejected moderation;
+8. publish accepted raw observations or privacy-preserving aggregates.
 
-A successful response need not reveal internal moderation signals. A simple receipt is enough:
+## Publication privacy
 
-```json
-{
-  "status": "pending",
-  "receipt_id": "opaque-random-id"
-}
-```
+Even coarse region + brand + role can identify someone in a tiny subgroup. Before real community data is public, small slices need minimum-sample rules.
 
-## Facility and geography handling
-
-Known facilities and user-entered facilities are different facts:
-
-- `facility_id`: canonical Open Worktime facility entity, such as one derived from an Open Supply Hub OS ID;
-- `facility_text`: contributor-supplied fallback when the site is not resolved;
-- `country`: coarse national work location;
-- `subdivision_code`: optional first-level work region.
-
-When a known facility already has country and subdivision metadata, the client can fill those fields automatically. A future moderation process can later map a fallback site name to a canonical facility without pretending the contributor originally supplied a verified facility ID.
-
-## Publication threshold
-
-The prototype does not yet choose a minimum sample threshold. Before real publication, small site / region / employment-identity slices should be reviewed for re-identification risk. A histogram should not expose a tiny subgroup merely because the underlying report schema permits that filter.
-
-Regional aggregation also needs a sampling warning: pooled community reports in a region are not automatically representative of that region's entire labor force. The mix of brands and factories should remain visible.
-
-See `docs/GEOGRAPHY.md`.
+The raw accepted dataset may therefore contain information that the public UI chooses not to render as a tiny filtered histogram.
 
 ## Current implementation
 
-The GitHub Pages prototype does not upload reports. It previews the exact v0.3 **client submission payload**, then locally simulates the server-added `id`, `submitted_at`, and `source` fields before storing the report in browser `localStorage`.
-
-JSON export contains those locally simulated accepted-report records. This exercises both contracts without pretending that an anonymous backend already exists.
+The GitHub Pages prototype stores reports only in browser `localStorage`. It locally simulates server-derived `analysis_weight`, `analysis_flags`, ID, timestamp, and source so the data contract can be tested without pretending a real anonymous backend exists.
