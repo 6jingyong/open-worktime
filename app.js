@@ -44,6 +44,7 @@ const LEGACY_STORAGE_KEYS = [
   'open-worktime-local-reports-v0.1'
 ];
 const PERIOD_BASIS = 'last_4_complete_weeks';
+let analysisFacilityLinks = [];
 
 const state = {
   brands: [],
@@ -107,6 +108,7 @@ async function boot() {
     state.companies = await companiesResponse.json();
     state.facilities = await facilitiesResponse.json();
     state.facilityLinks = await linksResponse.json();
+    analysisFacilityLinks = state.facilityLinks;
     state.demoDistribution = await distributionResponse.json();
     state.selectedBrandId = state.brands.find((brand) => brand.demo)?.id ?? state.brands[0]?.id ?? null;
 
@@ -207,7 +209,6 @@ function renderEmploymentFilters() {
 
 function renderGeographyFilters() {
   if (!els.geographyFilters) return;
-
   const filters = [{ id: 'all', label: 'All / no region required' }, ...collectBrandGeographies(state.selectedBrandId)];
   els.geographyFilters.innerHTML = '';
 
@@ -303,7 +304,6 @@ function renderBrand() {
     const count = counts[index];
     const share = (count / totalWeight) * 100;
     const relativeWidth = (count / maxCount) * 100;
-
     const row = document.createElement('div');
     row.className = 'hist-row';
     row.innerHTML = `
@@ -330,7 +330,6 @@ function setBrandSource(url, text) {
     els.brandSource.textContent = text;
     return;
   }
-
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
@@ -417,14 +416,18 @@ function deriveAnalysis(submission) {
   }
 
   if (submission.facility_id) {
-    const linked = state.facilityLinks.some((link) =>
-      link.brand_id === submission.brand_id && link.facility_id === submission.facility_id
-    );
-    if (linked) {
-      flags.push('known_brand_facility');
+    if (analysisFacilityLinks.length === 0) {
+      flags.push('location_unresolved');
     } else {
-      weight = Math.min(weight, 0.25);
-      flags.push('location_mismatch_review');
+      const linked = analysisFacilityLinks.some((link) =>
+        link.brand_id === submission.brand_id && link.facility_id === submission.facility_id
+      );
+      if (linked) {
+        flags.push('known_brand_facility');
+      } else {
+        weight = Math.min(weight, 0.25);
+        flags.push('location_mismatch_review');
+      }
     }
   } else if (submission.work_region || submission.country || submission.facility_text) {
     flags.push('location_unresolved');
@@ -436,7 +439,6 @@ function deriveAnalysis(submission) {
 function detectSeparatedPeaks(counts) {
   const total = counts.reduce((sum, value) => sum + value, 0);
   if (total < 30) return null;
-
   const peaks = [];
   for (let i = 0; i < counts.length; i += 1) {
     const left = i === 0 ? -1 : counts[i - 1];
@@ -444,7 +446,6 @@ function detectSeparatedPeaks(counts) {
     const share = counts[i] / total;
     if (counts[i] > left && counts[i] >= right && share >= 0.14) peaks.push(i);
   }
-
   for (let a = 0; a < peaks.length; a += 1) {
     for (let b = a + 1; b < peaks.length; b += 1) {
       const first = peaks[a];
@@ -457,7 +458,6 @@ function detectSeparatedPeaks(counts) {
       }
     }
   }
-
   return null;
 }
 
@@ -472,13 +472,11 @@ function brandSearchText(brand) {
 function handleBrandSearch() {
   const query = els.brandSearch.value.trim().toLowerCase();
   if (!query) return;
-
   const exact = state.brands.find((brand) =>
     brand.name.toLowerCase() === query || (brand.aliases ?? []).some((alias) => alias.toLowerCase() === query)
   );
   const partial = state.brands.find((brand) => brandSearchText(brand).includes(query));
   const match = exact ?? partial;
-
   if (match) {
     selectBrand(match.id);
   } else {
