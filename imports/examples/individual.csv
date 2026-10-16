@@ -1,0 +1,3 @@
+record_id,brand_id,brand,country,region,employment,role,weekly_hours,period,employee_name
+A1,bt-puma,PUMA,cn,Jiangsu,direct,frontline,57,last4,Alice Example
+A2,,Unresolved Example,us,Texas,dispatch,support,46,typical,Bob Example

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime external import manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["import_version", "source", "input", "mapping"],
+  "properties": {
+    "import_version": { "const": "external-import-v1" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "title", "publisher", "url", "retrieved_at", "reuse_status"],
+      "properties": {
+        "source_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "publisher": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "url": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "retrieved_at": { "type": "string", "format": "date" },
+        "reuse_status": { "enum": ["redistributable", "internal_only", "unknown"] },
+        "license_name": { "type": ["string", "null"], "maxLength": 160 },
+        "license_url": { "type": ["string", "null"], "maxLength": 1000 },
+        "notes": { "type": ["string", "null"], "maxLength": 1000 }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "record_kind", "file"],
+      "properties": {
+        "format": { "enum": ["csv", "json"] },
+        "record_kind": { "enum": ["individual", "aggregate"] },
+        "file": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "description": "Whitelist of source fields allowed into normalized evidence. Unmapped input columns are discarded.",
+      "additionalProperties": { "$ref": "#/$defs/mappingRule" }
+    }
+  },
+  "$defs": {
+    "mappingRule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["column"],
+          "properties": {
+            "column": { "type": "string", "minLength": 1 },
+            "transform": { "enum": ["trim", "upper", "lower"] },
+            "map": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean", "null"] } }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["constant"],
+          "properties": {
+            "constant": { "type": ["string", "number", "boolean", "null"] }
+          }
+        }
+      ]
+    }
+  }
+}
