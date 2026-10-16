@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime normalized external evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "import_record_id",
+    "source_id",
+    "source_record_id",
+    "evidence_kind",
+    "brand_id",
+    "brand_name_raw",
+    "country",
+    "work_region",
+    "facility_id",
+    "facility_text",
+    "employment_type",
+    "work_role",
+    "high_income_5x",
+    "weekly_hours_bucket",
+    "period_basis",
+    "observed_at",
+    "comparability",
+    "publishable",
+    "issues"
+  ],
+  "properties": {
+    "import_record_id": { "type": "string", "minLength": 1, "maxLength": 220 },
+    "source_id": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "source_record_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "evidence_kind": { "enum": ["individual", "aggregate"] },
+    "brand_id": { "type": ["string", "null"], "maxLength": 160 },
+    "brand_name_raw": { "type": ["string", "null"], "maxLength": 300 },
+    "country": { "type": ["string", "null"], "pattern": "^[A-Z]{2}$" },
+    "work_region": { "type": ["string", "null"], "maxLength": 120 },
+    "facility_id": { "type": ["string", "null"], "maxLength": 200 },
+    "facility_text": { "type": ["string", "null"], "maxLength": 300 },
+    "employment_type": {
+      "type": ["string", "null"],
+      "enum": [null, "direct_contract", "labor_dispatch", "labor_outsource", "onsite_service", "other_unknown"]
+    },
+    "work_role": {
+      "type": ["string", "null"],
+      "enum": [null, "manufacturing_frontline", "manufacturing_support", "management", "sales", "corporate_function", "other_unknown"]
+    },
+    "high_income_5x": {
+      "type": ["string", "null"],
+      "enum": [null, "no", "yes", "unknown"]
+    },
+    "weekly_hours_bucket": {
+      "type": ["string", "null"],
+      "enum": [null, "lt_35", "35_40", "40_45", "45_50", "50_55", "55_60", "60_65", "65_70", "70_75", "gte_75"]
+    },
+    "count": { "type": "integer", "minimum": 1 },
+    "period_basis": {
+      "enum": ["last_4_complete_weeks", "typical_week", "survey_week", "contract_schedule", "unknown"]
+    },
+    "observed_at": { "type": ["string", "null"], "maxLength": 80 },
+    "comparability": { "enum": ["canonical_candidate", "distribution_context", "context_only"] },
+    "publishable": { "type": "boolean" },
+    "issues": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 120 },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "evidence_kind": { "const": "aggregate" } } },
+      "then": { "required": ["count"] }
+    },
+    {
+      "if": { "properties": { "evidence_kind": { "const": "individual" } } },
+      "then": { "not": { "required": ["count"] } }
+    }
+  ]
+}
