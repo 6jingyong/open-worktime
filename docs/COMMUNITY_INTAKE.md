@@ -1,10 +1,11 @@
 # Community intake contract
 
-Open Worktime separates three things:
+Open Worktime separates four things:
 
 1. what the contributor submits;
 2. private anti-abuse / moderation metadata;
-3. the accepted public observation.
+3. the accepted raw public observation;
+4. release-time manufacturing analysis.
 
 ## Client submission
 
@@ -26,7 +27,7 @@ The browser sends facts only:
 }
 ```
 
-`country` and `work_region` are nullable. A contributor can leave geography blank without losing manufacturing relevance.
+`country` and `work_region` are nullable. Geography is useful evidence, not an intake requirement.
 
 `work_role` is intentionally broad. The project does not need exact job titles.
 
@@ -34,9 +35,9 @@ The browser sends facts only:
 
 The client cannot choose report ID, receipt time, source label, analysis weight, or analysis flags.
 
-## Accepted public observation
+## Accepted raw observation
 
-After validation the server may publish:
+After validation the intake system may publish the worker-supplied facts plus receipt metadata:
 
 ```json
 {
@@ -52,16 +53,35 @@ After validation the server may publish:
   "high_income_5x": "no",
   "weekly_hours_bucket": "55_60",
   "period_basis": "last_4_complete_weeks",
-  "analysis_weight": 1,
-  "analysis_flags": ["manufacturing_frontline", "known_brand_facility"],
   "submitted_at": "2026-10-16T05:30:00Z",
   "source": "community_report"
 }
 ```
 
-The weight is public and explainable; it is not a hidden deletion rule.
+The accepted observation deliberately does **not** freeze an analysis weight.
 
-## Default weighting rule
+## Release-time analysis
+
+A monthly, quarterly, or otherwise versioned report can later derive:
+
+```json
+{
+  "report_id": "opaque-server-id",
+  "methodology_version": "manufacturing-v1",
+  "scope_version": "2026-Q4",
+  "analysis_weight": 1,
+  "analysis_flags": [
+    "manufacturing_frontline",
+    "inside_curated_manufacturing_scope"
+  ]
+}
+```
+
+This separation matters because the project's knowledge of a brand's manufacturing footprint can improve after the worker submitted the observation.
+
+The same historical raw observation may therefore receive a different release-time classification in a later report if the manufacturing-scope catalog is corrected or expanded.
+
+## Current role weighting
 
 Current prototype base weights:
 
@@ -74,15 +94,22 @@ Current prototype base weights:
 
 If `high_income_5x = yes`, weight is capped at `0.25`.
 
-Employment identity itself does **not** reduce weight. Direct employees, dispatch labor, outsourcing, and on-site service remain separately visible because outsourcing should not erase labor from the dataset.
+Employment identity itself does **not** reduce weight. Direct employees, dispatch labor, outsourcing, and on-site service remain separately visible.
 
-### Location evidence
+## Geography and manufacturing scope
 
-- a canonical facility with an evidence-backed link to the selected brand gets `known_brand_facility`;
-- a canonical facility known to the catalog but not linked to the selected brand is capped at `0.25` and receives `location_mismatch_review`;
-- free-text region / site data that cannot yet be resolved receives `location_unresolved` but is not automatically penalized today.
+Geography is optional at intake.
 
-The last rule is deliberate: the current facility catalog is incomplete. A future backend may safely use brand × region mismatch more strongly only when the underlying manufacturing-location coverage is good enough.
+Before a release, the operator can review a brand's manufacturing footprint and freeze a versioned scope:
+
+- `partial`: known locations can confirm a match, but missing locations cannot be used to exclude a report;
+- `curated_complete`: the scope is considered complete enough for that release to act as a strict geography gate.
+
+If geography is supplied and falls outside a `curated_complete` brand scope, the raw report remains accepted but receives manufacturing weight `0` for that release.
+
+If geography is missing, no geography penalty is applied.
+
+See [`PUBLICATION_CYCLE.md`](PUBLICATION_CYCLE.md).
 
 ## Fields intentionally not collected
 
@@ -118,16 +145,23 @@ POST /v1/reports
 Content-Type: application/json
 ```
 
-The server should:
+The intake server should:
 
 1. validate `schema/submission.schema.json`;
 2. resolve known entities when possible;
 3. accept missing or unresolved geography rather than inventing facts;
-4. derive `analysis_weight` and `analysis_flags` from public rules plus evidence-backed entity matching;
-5. apply private rate-limit / abuse checks;
-6. assign opaque ID, receipt time, and source;
-7. move the report through pending / accepted / rejected moderation;
-8. publish accepted raw observations or privacy-preserving aggregates.
+4. apply private rate-limit / abuse checks;
+5. assign opaque ID, receipt time, and source;
+6. move the report through pending / accepted / rejected moderation;
+7. store the accepted raw observation without permanently attaching a manufacturing weight.
+
+The publication pipeline later:
+
+1. freezes a cutoff;
+2. refreshes and freezes `data/manufacturing-scope.json`;
+3. applies the current methodology;
+4. produces `schema/release-analysis.schema.json` records;
+5. builds the public weighted histograms.
 
 ## Publication privacy
 
@@ -137,4 +171,4 @@ The raw accepted dataset may therefore contain information that the public UI ch
 
 ## Current implementation
 
-The GitHub Pages prototype stores reports only in browser `localStorage`. It locally simulates server-derived `analysis_weight`, `analysis_flags`, ID, timestamp, and source so the data contract can be tested without pretending a real anonymous backend exists.
+The GitHub Pages prototype stores raw reports only in browser `localStorage`. The current weighting view is recomputed from those raw reports using the checked-in manufacturing-scope catalog, and JSON export includes the raw reports plus a separate release-analysis projection.
