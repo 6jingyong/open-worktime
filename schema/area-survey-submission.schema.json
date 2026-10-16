@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Worktime area survey pilot submission",
+  "description": "Brand-optional pilot payload for validating real manufacturing-worktime collection at city/geography level before brand-level data coverage is available.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "country",
+    "work_city",
+    "employment_type",
+    "work_role",
+    "high_income_5x",
+    "weekly_hours_bucket",
+    "period_basis"
+  ],
+  "properties": {
+    "schema_version": { "const": "area-survey-v1" },
+    "country": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "Work country. The first planned pilot is China-first, but the schema is country-neutral."
+    },
+    "work_city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Coarse workplace city/municipality only. Never collect home address, GPS or precise workplace address in this pilot."
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "direct_contract",
+        "labor_dispatch",
+        "labor_outsource",
+        "onsite_service",
+        "other_unknown"
+      ]
+    },
+    "work_role": {
+      "type": "string",
+      "enum": [
+        "manufacturing_frontline",
+        "manufacturing_support",
+        "management",
+        "sales",
+        "corporate_function",
+        "other_unknown"
+      ]
+    },
+    "high_income_5x": {
+      "type": "string",
+      "enum": ["no", "yes", "unknown"]
+    },
+    "weekly_hours_bucket": {
+      "type": "string",
+      "enum": [
+        "lt_35",
+        "35_40",
+        "40_45",
+        "45_50",
+        "50_55",
+        "55_60",
+        "60_65",
+        "65_70",
+        "70_75",
+        "gte_75"
+      ]
+    },
+    "period_basis": { "const": "last_4_complete_weeks" }
+  }
+}
