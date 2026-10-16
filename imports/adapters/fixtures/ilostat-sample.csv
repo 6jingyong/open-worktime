@@ -1,0 +1,5 @@
+ref_area,ref_area.label,source,indicator,sex,classif1,classif1.label,time,obs_value
+CHN,China,BA:123,HOW_TEMP_SEX_ECO_NB_A,SEX_T,ECO_ISIC4_C,C. Manufacturing,2024,46.2
+DEU,Germany,BA:456,HOW_TEMP_SEX_ECO_NB_A,SEX_T,ECO_ISIC4_C,C. Manufacturing,2024,35.8
+USA,United States,BA:789,HOW_TEMP_SEX_ECO_NB_A,SEX_F,ECO_ISIC4_C,C. Manufacturing,2024,39.1
+JPN,Japan,BA:111,HOW_TEMP_SEX_ECO_NB_A,SEX_T,ECO_ISIC4_G,G. Wholesale and retail trade,2024,38.0

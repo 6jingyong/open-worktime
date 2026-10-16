@@ -14,6 +14,7 @@
   "input": {
     "format": "csv",
     "record_kind": "aggregate",
+    "measure_type": "weekly_hours_distribution_cell",
     "file": "aggregate.csv"
   },
   "mapping": {

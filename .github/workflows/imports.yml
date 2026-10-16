@@ -18,6 +18,9 @@ jobs:
         run: |
           node --check imports/lib.mjs
           node --check imports/import.mjs
+          node --check imports/adapters/ilostat.mjs
+          node --check imports/adapters/workingtime.mjs
+          node --check imports/adapters/import-source.mjs
 
       - name: Validate import schemas and manifests
         run: |
@@ -25,20 +28,23 @@ jobs:
           python -m json.tool schema/external-evidence.schema.json > /dev/null
           python -m json.tool imports/examples/individual.manifest.json > /dev/null
           python -m json.tool imports/examples/aggregate.manifest.json > /dev/null
+          python -m json.tool imports/examples/mean.manifest.json > /dev/null
 
-      - name: Test import semantics
+      - name: Test import semantics and source adapters
         run: node --test imports/test/*.test.mjs
 
-      - name: Smoke-test reproducible bundles
+      - name: Smoke-test reproducible generic bundles
         run: |
           node imports/import.mjs imports/examples/individual.manifest.json --out /tmp/individual.json
           node imports/import.mjs imports/examples/aggregate.manifest.json --out /tmp/aggregate.json
+          node imports/import.mjs imports/examples/mean.manifest.json --out /tmp/mean.json
           python - <<'PY'
           import json
           from pathlib import Path
 
           individual = json.loads(Path('/tmp/individual.json').read_text())
           aggregate = json.loads(Path('/tmp/aggregate.json').read_text())
+          mean = json.loads(Path('/tmp/mean.json').read_text())
 
           assert individual['input']['row_count'] == 2
           assert len(individual['input']['sha256']) == 64
@@ -48,6 +54,39 @@ jobs:
           assert aggregate['input']['row_count'] == 2
           assert [row['count'] for row in aggregate['records']] == [18, 31]
           assert all(row['evidence_kind'] == 'aggregate' for row in aggregate['records'])
+
+          assert mean['input']['row_count'] == 2
+          assert mean['records'][0]['weekly_hours_value'] == 46.2
+          assert mean['records'][0]['weekly_hours_bucket'] is None
+          assert mean['records'][0]['comparability'] == 'context_only'
+          PY
+
+      - name: Smoke-test source-specific adapters
+        run: |
+          node imports/adapters/import-source.mjs ilostat \
+            imports/adapters/fixtures/ilostat-sample.csv \
+            --out /tmp/ilostat.json
+          node imports/adapters/import-source.mjs workingtime \
+            imports/adapters/fixtures/workingtime-sample.csv \
+            --out /tmp/workingtime.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ilo = json.loads(Path('/tmp/ilostat.json').read_text())
+          wt = json.loads(Path('/tmp/workingtime.json').read_text())
+
+          assert len(ilo['records']) == 2
+          assert ilo['records'][0]['measure_type'] == 'mean_weekly_hours'
+          assert ilo['records'][0]['weekly_hours_bucket'] is None
+          assert ilo['records'][0]['publishable'] is True
+
+          assert len(wt['records']) == 3
+          assert wt['records'][0]['weekly_hours_value'] == 45
+          assert wt['records'][0]['measure_type'] == 'schedule_span_hours'
+          assert all(row['publishable'] is False for row in wt['records'])
+          assert all(row['comparability'] == 'context_only' for row in wt['records'])
+          assert 'department' not in Path('/tmp/workingtime.json').read_text()
           PY
 
       - name: Check required import files
@@ -55,5 +94,9 @@ jobs:
           test -s imports/README.md
           test -s imports/lib.mjs
           test -s imports/import.mjs
+          test -s imports/adapters/README.md
+          test -s imports/adapters/ilostat.mjs
+          test -s imports/adapters/workingtime.mjs
+          test -s imports/adapters/import-source.mjs
           test -s schema/external-import-manifest.schema.json
           test -s schema/external-evidence.schema.json

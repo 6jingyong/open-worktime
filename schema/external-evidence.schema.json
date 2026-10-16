@@ -8,16 +8,22 @@
     "source_id",
     "source_record_id",
     "evidence_kind",
+    "measure_type",
     "brand_id",
     "brand_name_raw",
     "country",
+    "country_code_raw",
+    "country_label_raw",
     "work_region",
     "facility_id",
     "facility_text",
+    "industry_code",
+    "industry_label",
     "employment_type",
     "work_role",
     "high_income_5x",
     "weekly_hours_bucket",
+    "weekly_hours_value",
     "period_basis",
     "observed_at",
     "comparability",
@@ -28,13 +34,25 @@
     "import_record_id": { "type": "string", "minLength": 1, "maxLength": 220 },
     "source_id": { "type": "string", "minLength": 1, "maxLength": 80 },
     "source_record_id": { "type": "string", "minLength": 1, "maxLength": 160 },
-    "evidence_kind": { "enum": ["individual", "aggregate"] },
+    "evidence_kind": { "enum": ["individual", "aggregate", "aggregate_statistic"] },
+    "measure_type": {
+      "enum": [
+        "weekly_hours_observation",
+        "weekly_hours_distribution_cell",
+        "mean_weekly_hours",
+        "schedule_span_hours"
+      ]
+    },
     "brand_id": { "type": ["string", "null"], "maxLength": 160 },
     "brand_name_raw": { "type": ["string", "null"], "maxLength": 300 },
     "country": { "type": ["string", "null"], "pattern": "^[A-Z]{2}$" },
+    "country_code_raw": { "type": ["string", "null"], "maxLength": 40 },
+    "country_label_raw": { "type": ["string", "null"], "maxLength": 160 },
     "work_region": { "type": ["string", "null"], "maxLength": 120 },
     "facility_id": { "type": ["string", "null"], "maxLength": 200 },
     "facility_text": { "type": ["string", "null"], "maxLength": 300 },
+    "industry_code": { "type": ["string", "null"], "maxLength": 120 },
+    "industry_label": { "type": ["string", "null"], "maxLength": 300 },
     "employment_type": {
       "type": ["string", "null"],
       "enum": [null, "direct_contract", "labor_dispatch", "labor_outsource", "onsite_service", "other_unknown"]
@@ -51,9 +69,10 @@
       "type": ["string", "null"],
       "enum": [null, "lt_35", "35_40", "40_45", "45_50", "50_55", "55_60", "60_65", "65_70", "70_75", "gte_75"]
     },
+    "weekly_hours_value": { "type": ["number", "null"], "minimum": 0, "maximum": 168 },
     "count": { "type": "integer", "minimum": 1 },
     "period_basis": {
-      "enum": ["last_4_complete_weeks", "typical_week", "survey_week", "contract_schedule", "unknown"]
+      "enum": ["last_4_complete_weeks", "typical_week", "survey_week", "annual_mean_actual_week", "contract_schedule", "unknown"]
     },
     "observed_at": { "type": ["string", "null"], "maxLength": 80 },
     "comparability": { "enum": ["canonical_candidate", "distribution_context", "context_only"] },
@@ -67,7 +86,25 @@
   "allOf": [
     {
       "if": { "properties": { "evidence_kind": { "const": "aggregate" } } },
-      "then": { "required": ["count"] }
+      "then": {
+        "required": ["count"],
+        "properties": {
+          "measure_type": { "const": "weekly_hours_distribution_cell" },
+          "weekly_hours_bucket": { "type": "string" },
+          "weekly_hours_value": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "evidence_kind": { "const": "aggregate_statistic" } } },
+      "then": {
+        "not": { "required": ["count"] },
+        "properties": {
+          "measure_type": { "const": "mean_weekly_hours" },
+          "weekly_hours_bucket": { "type": "null" },
+          "weekly_hours_value": { "type": "number" }
+        }
+      }
     },
     {
       "if": { "properties": { "evidence_kind": { "const": "individual" } } },
