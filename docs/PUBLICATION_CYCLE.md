@@ -56,7 +56,7 @@ For example, once a brand's manufacturing geography has been deliberately review
 
 A `partial` scope can confirm known manufacturing locations, but it must not be used to exclude unlisted locations.
 
-This distinction prevents a tiny pilot facility catalog from becoming a false negative engine while still allowing mature brand scopes to be strict.
+This distinction prevents a tiny pilot facility catalog from becoming a false-negative engine while still allowing mature brand scopes to be strict.
 
 ## Why raw observations and release analysis are separate
 
