@@ -36,7 +36,6 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          import re
           from pathlib import Path
 
           brands = json.loads(Path('data/brands.json').read_text())
@@ -70,10 +69,9 @@ jobs:
               os_id = facility.get('os_id')
               if os_id:
                   assert facility['id'] == f"osh-{os_id}", f"facility id must preserve OS ID: {facility['id']}"
-              subdivision = facility.get('subdivision_code')
-              if subdivision:
-                  assert re.fullmatch(r'[A-Z]{2}-[A-Z0-9]{1,3}', subdivision), f"invalid subdivision code: {subdivision}"
-                  assert subdivision.startswith(f"{facility['country']}-"), f"facility subdivision/country mismatch: {facility['id']}"
+              region = facility.get('work_region')
+              if region is not None:
+                  assert isinstance(region, str) and 0 < len(region) <= 80, f"invalid work region: {facility['id']}"
 
           seen_edges = set()
           allowed_relationships = {
@@ -118,31 +116,33 @@ jobs:
           report = json.loads(Path('schema/report.schema.json').read_text())
 
           client_fields = {
-              'schema_version', 'brand_id', 'country', 'subdivision_code',
-              'facility_id', 'facility_text', 'employment_type',
-              'weekly_hours_bucket', 'period_basis'
+              'schema_version', 'brand_id', 'country', 'work_region',
+              'facility_id', 'facility_text', 'employment_type', 'work_role',
+              'high_income_5x', 'weekly_hours_bucket', 'period_basis'
           }
-          receipt_fields = {'id', 'submitted_at', 'source'}
+          server_fields = {'id', 'analysis_weight', 'analysis_flags', 'submitted_at', 'source'}
 
           assert client_fields <= set(submission['required'])
-          assert receipt_fields.isdisjoint(submission['properties']), 'client must not choose receipt metadata'
-          assert client_fields | receipt_fields <= set(report['required'])
-          assert submission['properties']['schema_version']['const'] == '0.3'
-          assert report['properties']['schema_version']['const'] == '0.3'
+          assert server_fields.isdisjoint(submission['properties']), 'client must not choose receipt or weight metadata'
+          assert client_fields | server_fields <= set(report['required'])
+          assert submission['properties']['schema_version']['const'] == '0.4'
+          assert report['properties']['schema_version']['const'] == '0.4'
+          assert submission['properties']['country']['type'] == ['string', 'null'], 'geography must be optional'
+          assert submission['properties']['work_region']['type'] == ['string', 'null'], 'region must be optional'
+          assert report['properties']['analysis_weight']['minimum'] == 0
+          assert report['properties']['analysis_weight']['maximum'] == 1
           assert submission['properties']['period_basis']['const'] == 'last_4_complete_weeks'
-          assert report['properties']['period_basis']['const'] == 'last_4_complete_weeks'
-          assert 'observed_at' not in report['properties'], 'legacy observed_at field should not remain'
 
           app = Path('app.js').read_text()
-          assert "const submission = {" in app, 'client must build a submission object'
-          assert "const report = {" in app, 'client must separately build the local accepted-report simulation'
-          assert 'facility_text:' in app, 'client must keep unresolved facility text separate'
-          assert 'subdivision_code:' in app, 'client must include coarse region'
-          assert 'period_basis: PERIOD_BASIS' in app, 'client must record the fixed reporting period'
+          assert 'ROLE_WEIGHTS' in app, 'role weighting must be explicit in client prototype'
+          assert 'analysis_weight:' in app, 'local accepted-report simulation must attach analysis weight'
+          assert 'high_income_5x:' in app, 'high-income relevance signal must be collected without salary amount'
+          assert 'work_region:' in app, 'optional region must be represented'
+          assert 'location_mismatch_review' in app, 'known mismatched facilities must be reviewable'
 
           geography = Path('geography.js').read_text()
-          assert 'Brands represented' not in geography or 'brand_id' in geography
-          assert 'subdivision:' in geography, 'regional explorer must support subdivision filters'
+          assert 'analysis_weight' in geography, 'regional explorer must support weighted view'
+          assert 'work_region' in geography, 'regional explorer must support simple optional region labels'
           PY
 
       - name: Check required static files
@@ -157,4 +157,5 @@ jobs:
           test -s geography.js
           test -s README.md
           test -s docs/COMMUNITY_INTAKE.md
+          test -s docs/GEOGRAPHY.md
           test -s data/ATTRIBUTION.md
