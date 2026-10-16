@@ -1,14 +1,36 @@
 # Community intake contract
 
-Open Worktime should eventually accept real worker reports, but the public observation format must stay much smaller than the private anti-abuse system around it.
+Open Worktime should eventually accept real worker reports, but the client submission, the private anti-abuse system, and the accepted public observation are three different things.
 
-## Public observation
+## Client submission
 
-A public observation contains only the fields needed to place one report into the weekly-hours distribution:
+The browser should send only the facts supplied by the contributor:
 
 ```json
 {
   "schema_version": "0.2",
+  "brand_id": "bt-puma",
+  "country": "CN",
+  "facility_id": "osh-CN2021159RK49KG",
+  "facility_text": null,
+  "employment_type": "labor_dispatch",
+  "weekly_hours_bucket": "55_60",
+  "period_basis": "last_4_complete_weeks"
+}
+```
+
+This payload is defined by `schema/submission.schema.json`.
+
+The client does **not** get to choose the authoritative receipt time, public report ID, or public source label.
+
+## Accepted public observation
+
+After intake validation, the server can attach receipt metadata and produce a public record:
+
+```json
+{
+  "schema_version": "0.2",
+  "id": "opaque-server-id",
   "brand_id": "bt-puma",
   "country": "CN",
   "facility_id": "osh-CN2021159RK49KG",
@@ -20,6 +42,8 @@ A public observation contains only the fields needed to place one report into th
   "source": "community_report"
 }
 ```
+
+This accepted record is defined by `schema/report.schema.json`.
 
 If a production site is not yet in the facility catalog, `facility_id` remains `null` and `facility_text` may contain a short site name. The fallback text is not a verified facility identity.
 
@@ -40,7 +64,7 @@ This is deliberate data minimization, not an incomplete profile.
 
 ## Private intake metadata
 
-A future backend may need temporary or restricted metadata for abuse resistance, for example rate-limit state, receipt IDs, moderation decisions, or optional employment-verification results.
+A future backend may need temporary or restricted metadata for abuse resistance, for example rate-limit state, moderation decisions, optional employment-verification results, or network-derived abuse signals.
 
 Those fields belong in a separate private intake system. They must not be silently appended to the public observation export.
 
@@ -55,16 +79,17 @@ POST /v1/reports
 Content-Type: application/json
 ```
 
-Request body: one object valid under `schema/report.schema.json` with `source = community_report`.
+Request body: one object valid under `schema/submission.schema.json`.
 
 The server should:
 
-1. validate the schema;
+1. validate the submission schema;
 2. resolve or quarantine unknown entity references rather than inventing them;
 3. apply rate limits and abuse checks outside the public record;
-4. assign an opaque receipt ID;
-5. place the report into a pending/accepted/rejected moderation state;
-6. publish only accepted observations or privacy-preserving aggregates.
+4. assign an opaque receipt/report ID;
+5. assign the authoritative `submitted_at` receipt time and `source = community_report`;
+6. place the report into a pending/accepted/rejected moderation state;
+7. publish only accepted observations or privacy-preserving aggregates.
 
 A successful response need not reveal internal moderation signals. A simple receipt is enough:
 
@@ -82,7 +107,7 @@ Known facilities and user-entered facilities are different facts:
 - `facility_id`: canonical Open Worktime facility entity, such as one derived from an Open Supply Hub OS ID;
 - `facility_text`: contributor-supplied fallback when the site is not resolved.
 
-A future moderation process can later map a fallback name to a canonical facility without rewriting what the contributor originally submitted.
+A future moderation process can later map a fallback name to a canonical facility without pretending the contributor originally supplied a verified facility ID.
 
 ## Publication threshold
 
@@ -90,4 +115,6 @@ The prototype does not yet choose a minimum sample threshold. Before real public
 
 ## Current implementation
 
-The GitHub Pages prototype does not upload reports. It stores v0.2 records in browser `localStorage`, renders them locally, and allows JSON export. This exercises the future submission contract without pretending that an anonymous backend already exists.
+The GitHub Pages prototype does not upload reports. It previews the exact v0.2 **client submission payload**, then locally simulates the server-added `id`, `submitted_at`, and `source` fields before storing the report in browser `localStorage`.
+
+JSON export contains those locally simulated accepted-report records. This exercises both contracts without pretending that an anonymous backend already exists.
