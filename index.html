@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Open Worktime — crowdsourced actual weekly working time behind manufactured products and brands." />
+  <title>Open Worktime</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand-mark" href="./" aria-label="Open Worktime home">Open Worktime</a>
+    <div class="header-badges" aria-label="Project status">
+      <span class="badge">Prototype</span>
+      <span class="badge badge-muted">Open dataset</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Working-time transparency for manufactured goods</p>
+      <h1>How many hours do the people who make your products actually work?</h1>
+      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare direct hires, dispatched labor, outsourced labor, and on-site service workers.</p>
+      <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久。</p>
+
+      <div class="search-row">
+        <label class="sr-only" for="brand-search">Search a brand</label>
+        <input id="brand-search" list="brand-options" autocomplete="off" placeholder="Search a demo brand…" />
+        <datalist id="brand-options"></datalist>
+        <button id="brand-search-button" type="button">View distribution</button>
+      </div>
+      <p class="demo-notice">Demo only — all bundled observations and brands are fictional.</p>
+    </section>
+
+    <section class="panel" id="brand-panel" aria-live="polite">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Reported actual working time</p>
+          <h2 id="brand-name">Loading…</h2>
+          <p id="brand-meta" class="muted"></p>
+        </div>
+        <div class="sample-card">
+          <span class="sample-label">Sample</span>
+          <strong id="sample-count">0</strong>
+          <span class="sample-label">observations</span>
+        </div>
+      </div>
+
+      <div class="filter-block">
+        <span class="filter-label">Employment identity</span>
+        <div id="employment-filters" class="chip-row" role="group" aria-label="Employment identity filter"></div>
+      </div>
+
+      <div class="histogram" id="histogram" aria-label="Weekly working hours distribution"></div>
+
+      <div id="shape-note" class="shape-note" hidden></div>
+      <p class="method-note">Buckets use reported average actual hours over the last four complete weeks. Bar length is relative to the largest bucket; labels show count and share.</p>
+    </section>
+
+    <section class="panel submit-panel">
+      <div class="panel-heading compact">
+        <div>
+          <p class="eyebrow">Prototype submission</p>
+          <h2>Add one observation</h2>
+          <p class="muted">For now, submissions stay only in this browser. They are included immediately in the chart and can be exported as JSON.</p>
+        </div>
+      </div>
+
+      <form id="report-form">
+        <div class="form-grid">
+          <label>
+            <span>Brand</span>
+            <select id="report-brand" required></select>
+          </label>
+
+          <label>
+            <span>Country / region</span>
+            <input id="report-country" maxlength="2" placeholder="CN" required />
+            <small>ISO 3166-1 alpha-2, e.g. CN, JP, DE</small>
+          </label>
+
+          <label>
+            <span>Production site (optional)</span>
+            <input id="report-facility" maxlength="120" placeholder="Factory or site name / ID" />
+          </label>
+
+          <label>
+            <span>Employment identity</span>
+            <select id="report-employment" required></select>
+          </label>
+
+          <label>
+            <span>Average actual weekly hours</span>
+            <select id="report-hours" required></select>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">Add local observation</button>
+          <button id="export-button" class="secondary" type="button">Export my local JSON</button>
+          <button id="clear-button" class="ghost" type="button">Clear local demo submissions</button>
+        </div>
+        <p id="form-status" class="form-status" role="status"></p>
+      </form>
+    </section>
+
+    <section class="principles">
+      <article>
+        <h3>No moral score</h3>
+        <p>Publish the distribution. Let workers, consumers, researchers, and buyers decide what it means.</p>
+      </article>
+      <article>
+        <h3>Count the labor that is actually used</h3>
+        <p>Direct employment is not the only relevant relationship. Dispatch, outsourcing, and on-site service remain visible.</p>
+      </article>
+      <article>
+        <h3>Make the dataset portable</h3>
+        <p>The website is an interface, not the only copy. Future accepted data should be exportable, signed, mirrored, and P2P-friendly.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span>Open Worktime · MIT code · prototype data only</span>
+    <a href="https://github.com/6jingyong/open-worktime">GitHub</a>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
