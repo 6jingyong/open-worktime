@@ -43,6 +43,47 @@
   font-size: 1.35rem;
 }
 
+.country-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.country-context[hidden] {
+  display: none;
+}
+
+.country-context-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.country-context strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.45rem;
+}
+
+.country-context p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.country-context a {
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
 .region-warning {
   margin-top: 16px;
   padding: 13px 15px;
@@ -67,5 +108,10 @@
 @media (max-width: 720px) {
   .region-controls {
     grid-template-columns: 1fr;
+  }
+
+  .country-context {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
