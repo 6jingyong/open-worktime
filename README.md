@@ -174,4 +174,4 @@ Then open `http://localhost:8000`.
 
 ## Status
 
-Prototype / pre-community-data. The next major engineering step is a real anonymous intake backend plus a reproducible batch publication pipeline.
+Prototype / pre-community-data. The next major engineering steps are a real anonymous intake backend and a reproducible monthly/quarterly publication pipeline.
