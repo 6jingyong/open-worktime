@@ -23,7 +23,7 @@
     <section class="hero">
       <p class="eyebrow">Working-time transparency for manufactured goods</p>
       <h1>How many hours do the people who make your products actually work?</h1>
-      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare employment identities and work regions.</p>
+      <p class="hero-copy">Search a brand, inspect the reported weekly-hours distribution, and compare employment identities and optional work regions.</p>
       <p class="hero-copy zh">看看制造你所购买商品的人，每周实际工作多久。</p>
 
       <div class="search-row">
@@ -46,14 +46,14 @@
         <div class="sample-card">
           <span class="sample-label">Raw reports</span>
           <strong id="sample-count">0</strong>
-          <span class="sample-label">weighted n <span id="sample-effective">0</span></span>
+          <span class="sample-label">current-scope n <span id="sample-effective">0</span></span>
         </div>
       </div>
 
       <div class="filter-block">
         <span class="filter-label">Analysis view</span>
         <div id="analysis-filters" class="chip-row" role="group" aria-label="Analysis weighting filter"></div>
-        <p class="method-note">The default view weights reports by relevance to ordinary manufacturing labor. You can switch to all raw reports at any time.</p>
+        <p class="method-note">The default view is recalculated from raw reports using the current frozen manufacturing-scope catalog. A monthly or quarterly release can update that catalog and re-run the same historical observations without rewriting them.</p>
       </div>
 
       <div class="filter-block">
@@ -64,7 +64,7 @@
       <div class="filter-block">
         <span class="filter-label">Work geography</span>
         <div id="geography-filters" class="chip-row" role="group" aria-label="Work geography filter"></div>
-        <p class="method-note">Geography is optional. A report without a region can still contribute to the manufacturing view.</p>
+        <p class="method-note">Geography is optional. Missing geography is not penalized. When a brand has a curated-complete manufacturing scope, a supplied location outside that scope receives zero manufacturing weight for that release.</p>
       </div>
 
       <div class="histogram" id="histogram" aria-label="Weekly working hours distribution"></div>
@@ -81,7 +81,7 @@
           <span class="facility-scope">Evidence-backed links only</span>
         </div>
         <div id="facility-list" class="facility-list"></div>
-        <p class="method-note">The catalog is incomplete. A missing brand-region match is evidence for review, not automatic proof that a worker report is false.</p>
+        <p class="method-note">Facility evidence and manufacturing-scope coverage are different things. Partial scope can confirm known locations but cannot exclude missing ones; only a deliberately curated-complete scope is used as a strict geography gate.</p>
       </div>
     </section>
 
@@ -118,7 +118,7 @@
           <strong id="region-sample-count">0</strong>
         </div>
         <div class="region-metric">
-          <span>Weighted n</span>
+          <span>Current-scope n</span>
           <strong id="region-effective-count">0</strong>
         </div>
         <div class="region-metric">
@@ -140,7 +140,7 @@
         <div>
           <p class="eyebrow">Community intake contract preview</p>
           <h2>Prepare one observation</h2>
-          <p class="muted">The prototype still saves only in this browser, but the record uses the same privacy-minimal shape intended for a future anonymous submission API.</p>
+          <p class="muted">The prototype saves raw facts only in this browser. Manufacturing relevance is recalculated later from the frozen scope used by a report release.</p>
         </div>
       </div>
 
@@ -215,25 +215,25 @@
         <div>
           <p class="eyebrow">Submission preview</p>
           <h3>What the future intake API would receive</h3>
-          <p class="muted">The client sends facts only. The server attaches the public analysis weight and reasons separately so contributors cannot choose their own weight.</p>
+          <p class="muted">The client sends facts only. Each report release later derives a public weight and reasons from a frozen methodology and manufacturing-scope version.</p>
         </div>
         <pre id="record-preview" aria-live="polite">No local report yet.</pre>
-        <p class="contract-note">Location is optional. A brand-region combination that looks non-manufacturing can be accepted and later downweighted when the evidence catalog is strong enough, instead of being rejected at intake.</p>
+        <p class="contract-note">Location remains optional and never blocks intake. If a contributor supplies a location that falls outside a brand's curated-complete manufacturing scope, the raw report remains available but receives zero manufacturing weight in that release.</p>
       </div>
     </section>
 
     <section class="principles">
       <article>
         <h3>No moral score</h3>
-        <p>Publish the distribution and the weighting rules. Do not hide the raw reports.</p>
+        <p>Publish the distribution, the raw sample count, and the release-time weighting rules.</p>
       </article>
       <article>
         <h3>Manufacturing relevance matters</h3>
         <p>The default view should represent ordinary production labor, not be dominated by sales staff, headquarters functions, executives, or unusually high-income workers.</p>
       </article>
       <article>
-        <h3>Optional geography, not a gate</h3>
-        <p>Region helps interpretation, but missing or unusual location information does not block a report from entering the intake system.</p>
+        <h3>Collect broadly, publish conservatively</h3>
+        <p>Keep raw observations intact, then rebuild each monthly or quarterly report after the manufacturing-scope database has been reviewed.</p>
       </article>
     </section>
   </main>
