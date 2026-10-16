@@ -56,8 +56,8 @@ It now includes:
 - employment-type filters;
 - production-location suggestions in the local prototype submission form;
 - a distribution-shape warning for separated peaks;
-- a submission form that stores prototype submissions only in the current browser;
-- JSON export of those local submissions;
+- a privacy-minimal v0.2 observation contract;
+- browser-local report creation plus JSON export;
 - machine-readable observation, entity-catalog, and facility-link schemas.
 
 ### Important data boundary
@@ -70,7 +70,7 @@ The bundled histogram observations still target only four fictional `demo-*` bra
 
 ## Entity catalog
 
-The graph now separates entities from evidence edges:
+The graph separates entities from evidence edges:
 
 ```text
 brand
@@ -81,7 +81,8 @@ brand
 
 report
   ├─ brand_id → brand
-  └─ facility_id → facility (optional)
+  ├─ facility_id → canonical facility (optional)
+  └─ facility_text → unresolved site fallback (optional)
 ```
 
 The first facility pilot uses Open Supply Hub OS ID `CN2021159RK49KG` for NANTONG YUXIN CLOTHING CO.,LTD. The brand-to-facility edge is included because the OS Hub profile lists PUMA in the Supply Chain Network and attributes Final Product Assembly information to PUMA.
@@ -90,35 +91,42 @@ This is intentionally a one-location pilot, not an attempt to mirror PUMA's full
 
 See [`docs/ENTITY_CATALOG.md`](docs/ENTITY_CATALOG.md) and [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
-## Data model
+## Observation contract
 
-A real observation is designed around a minimal record:
+The public record is deliberately small:
 
 ```json
 {
-  "schema_version": "0.1",
-  "brand_id": "brand-id",
+  "schema_version": "0.2",
+  "brand_id": "bt-puma",
   "country": "CN",
-  "facility_id": null,
-  "employment_type": "direct_contract",
-  "weekly_hours_bucket": "45_50",
-  "observed_at": "2026-10-16T00:00:00Z"
+  "facility_id": "osh-CN2021159RK49KG",
+  "facility_text": null,
+  "employment_type": "labor_dispatch",
+  "weekly_hours_bucket": "55_60",
+  "period_basis": "last_4_complete_weeks",
+  "submitted_at": "2026-10-16T04:10:00Z",
+  "source": "community_report"
 }
 ```
 
-See [`schema/report.schema.json`](schema/report.schema.json), [`schema/catalog.schema.json`](schema/catalog.schema.json), and [`schema/facility-link.schema.json`](schema/facility-link.schema.json).
+The public observation does **not** need a worker's name, email, phone number, employee ID, exact job title, salary, gender, age, document upload, or written narrative.
+
+Known production sites use `facility_id`. If a site is not yet resolved, it stays separate as `facility_text` rather than being treated as a verified facility entity.
+
+See [`schema/report.schema.json`](schema/report.schema.json) and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
 
 ## Architecture principle
 
 The project separates three problems:
 
 1. **Entity resolution** — what brand, owner company, and production site an observation refers to.
-2. **Community input** — how new observations are submitted, validated, rate-limited, and moderated.
+2. **Community input** — how new observations are submitted, validated, rate-limited, and moderated without leaking private intake metadata into the public dataset.
 3. **Public dataset** — how accepted observations and aggregates are exported so that no single website is the only copy.
 
-The MVP only proves the product loop and entity boundary. Signed snapshots, mirrors, Torrent/IPFS distribution, and a real community submission backend are later layers.
+The current GitHub Pages client only exercises the submission contract locally. A real anonymous ingestion backend has not been deployed yet.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/COMMUNITY_INTAKE.md`](docs/COMMUNITY_INTAKE.md).
 
 ## Licensing
 
@@ -152,4 +160,4 @@ Live prototype: https://6jingyong.github.io/open-worktime/
 
 Prototype / pre-community-data.
 
-The immediate goal is to validate the brand → production-location → worktime-observation model before accepting real employee submissions or importing facility lists at scale.
+The immediate goal is to keep the public observation contract stable enough that a future anonymous ingestion backend can be added without redesigning the client or dataset.
