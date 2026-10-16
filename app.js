@@ -1,3 +1,5 @@
+import { buildReleaseAnalysis, deriveManufacturingAnalysis } from './analysis.js';
+
 const HOURS_BUCKETS = [
   { id: 'lt_35', label: '<35' },
   { id: '35_40', label: '35–<40' },
@@ -28,15 +30,6 @@ const WORK_ROLES = [
   { id: 'other_unknown', label: 'Other / unknown', zh: '其他 / 不确定' }
 ];
 
-const ROLE_WEIGHTS = {
-  manufacturing_frontline: 1,
-  manufacturing_support: 1,
-  management: 0.25,
-  sales: 0,
-  corporate_function: 0,
-  other_unknown: 0.5
-};
-
 const STORAGE_KEY = 'open-worktime-local-reports-v0.4';
 const LEGACY_STORAGE_KEYS = [
   'open-worktime-local-reports-v0.3',
@@ -44,13 +37,13 @@ const LEGACY_STORAGE_KEYS = [
   'open-worktime-local-reports-v0.1'
 ];
 const PERIOD_BASIS = 'last_4_complete_weeks';
-let analysisFacilityLinks = [];
 
 const state = {
   brands: [],
   companies: [],
   facilities: [],
   facilityLinks: [],
+  manufacturingScope: null,
   demoDistribution: [],
   localReports: loadLocalReports(),
   selectedBrandId: null,
@@ -92,15 +85,16 @@ boot();
 
 async function boot() {
   try {
-    const [brandsResponse, companiesResponse, facilitiesResponse, linksResponse, distributionResponse] = await Promise.all([
+    const [brandsResponse, companiesResponse, facilitiesResponse, linksResponse, scopeResponse, distributionResponse] = await Promise.all([
       fetch('./data/brands.json'),
       fetch('./data/companies.json'),
       fetch('./data/facilities.json'),
       fetch('./data/facility-links.json'),
+      fetch('./data/manufacturing-scope.json'),
       fetch('./data/demo-distribution.json')
     ]);
 
-    if (![brandsResponse, companiesResponse, facilitiesResponse, linksResponse, distributionResponse].every((response) => response.ok)) {
+    if (![brandsResponse, companiesResponse, facilitiesResponse, linksResponse, scopeResponse, distributionResponse].every((response) => response.ok)) {
       throw new Error('Failed to load prototype data.');
     }
 
@@ -108,7 +102,7 @@ async function boot() {
     state.companies = await companiesResponse.json();
     state.facilities = await facilitiesResponse.json();
     state.facilityLinks = await linksResponse.json();
-    analysisFacilityLinks = state.facilityLinks;
+    state.manufacturingScope = await scopeResponse.json();
     state.demoDistribution = await distributionResponse.json();
     state.selectedBrandId = state.brands.find((brand) => brand.demo)?.id ?? state.brands[0]?.id ?? null;
 
@@ -293,8 +287,8 @@ function renderBrand() {
     const empty = document.createElement('div');
     empty.className = 'empty-chart';
     empty.innerHTML = `
-      <strong>No weighted manufacturing observations under the current filters.</strong>
-      <span>Switch to “All raw reports” to inspect accepted context reports that carry zero manufacturing weight.</span>
+      <strong>No observations under the current analysis view and filters.</strong>
+      <span>${state.analysisMode === 'weighted' ? 'Switch to “All raw reports” to inspect accepted context reports that carry zero manufacturing weight.' : 'No raw reports match this selection.'}</span>
     `;
     els.histogram.appendChild(empty);
     return;
@@ -308,7 +302,7 @@ function renderBrand() {
     row.className = 'hist-row';
     row.innerHTML = `
       <span class="hist-label">${bucket.label}</span>
-      <div class="hist-track" title="${formatWeight(count)} weighted observations · ${share.toFixed(1)}%">
+      <div class="hist-track" title="${formatWeight(count)} observations · ${share.toFixed(1)}%">
         <div class="hist-fill" style="width: ${relativeWidth.toFixed(2)}%"></div>
       </div>
       <span class="hist-value">${formatWeight(count)} · ${share.toFixed(1)}%</span>
@@ -343,6 +337,18 @@ function getOwner(brand) {
   return state.companies.find((company) => company.id === brand.owner_company_id) ?? null;
 }
 
+function analysisContext() {
+  return {
+    facilities: state.facilities,
+    facilityLinks: state.facilityLinks,
+    scopeCatalog: state.manufacturingScope
+  };
+}
+
+function deriveAnalysis(report) {
+  return deriveManufacturingAnalysis(report, analysisContext());
+}
+
 function aggregateBrand(brandId, employmentFilter, geographyFilter, analysisMode) {
   const counts = HOURS_BUCKETS.map(() => 0);
   let rawCount = 0;
@@ -351,6 +357,7 @@ function aggregateBrand(brandId, employmentFilter, geographyFilter, analysisMode
   for (const row of state.demoDistribution) {
     if (row.brand_id !== brandId) continue;
     if (employmentFilter !== 'all' && row.employment_type !== employmentFilter) continue;
+    if (geographyFilter !== 'all') continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === row.weekly_hours_bucket);
     if (index < 0) continue;
     const count = Number(row.count) || 0;
@@ -365,9 +372,8 @@ function aggregateBrand(brandId, employmentFilter, geographyFilter, analysisMode
     if (!matchesGeography(report, geographyFilter)) continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === report.weekly_hours_bucket);
     if (index < 0) continue;
-    const weight = Number.isFinite(report.analysis_weight) ? report.analysis_weight : deriveAnalysis(report).weight;
-    const applied = analysisMode === 'all' ? 1 : weight;
-    counts[index] += applied;
+    const weight = deriveAnalysis(report).weight;
+    counts[index] += analysisMode === 'all' ? 1 : weight;
     rawCount += 1;
     effectiveCount += weight;
   }
@@ -383,7 +389,7 @@ function matchesGeography(row, filter) {
 }
 
 function effectiveCountry(row) {
-  if (row?.country) return row.country.toUpperCase();
+  if (row?.country) return String(row.country).toUpperCase();
   if (!row?.facility_id) return null;
   return state.facilities.find((facility) => facility.id === row.facility_id)?.country ?? null;
 }
@@ -397,43 +403,6 @@ function effectiveWorkRegion(row) {
 
 function normalizeRegion(value) {
   return String(value ?? '').trim().toLocaleLowerCase();
-}
-
-function deriveAnalysis(submission) {
-  const flags = [];
-  let weight = ROLE_WEIGHTS[submission.work_role] ?? 0.5;
-
-  if (submission.work_role === 'manufacturing_frontline') flags.push('manufacturing_frontline');
-  else if (submission.work_role === 'manufacturing_support') flags.push('manufacturing_support');
-  else if (submission.work_role === 'management') flags.push('management_role');
-  else if (submission.work_role === 'sales') flags.push('sales_role');
-  else if (submission.work_role === 'corporate_function') flags.push('corporate_function_role');
-  else flags.push('unknown_role');
-
-  if (submission.high_income_5x === 'yes') {
-    weight = Math.min(weight, 0.25);
-    flags.push('high_income_5x');
-  }
-
-  if (submission.facility_id) {
-    if (analysisFacilityLinks.length === 0) {
-      flags.push('location_unresolved');
-    } else {
-      const linked = analysisFacilityLinks.some((link) =>
-        link.brand_id === submission.brand_id && link.facility_id === submission.facility_id
-      );
-      if (linked) {
-        flags.push('known_brand_facility');
-      } else {
-        weight = Math.min(weight, 0.25);
-        flags.push('location_mismatch_review');
-      }
-    }
-  } else if (submission.work_region || submission.country || submission.facility_text) {
-    flags.push('location_unresolved');
-  }
-
-  return { weight, flags };
 }
 
 function detectSeparatedPeaks(counts) {
@@ -526,12 +495,9 @@ els.reportForm.addEventListener('submit', (event) => {
     period_basis: PERIOD_BASIS
   };
 
-  const analysis = deriveAnalysis(submission);
   const report = {
     ...submission,
     id: globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    analysis_weight: analysis.weight,
-    analysis_flags: analysis.flags,
     submitted_at: new Date().toISOString(),
     source: 'local_prototype'
   };
@@ -540,7 +506,9 @@ els.reportForm.addEventListener('submit', (event) => {
   saveLocalReports();
   renderRecordPreview(submission);
   selectBrand(report.brand_id);
-  els.formStatus.textContent = `Saved locally. Simulated manufacturing weight: ${formatWeight(report.analysis_weight)} (${report.analysis_flags.join(', ')}). Nothing was uploaded.`;
+
+  const releaseAnalysis = buildReleaseAnalysis(report, analysisContext());
+  els.formStatus.textContent = `Saved raw observation locally. Current release preview: weight ${formatWeight(releaseAnalysis.analysis_weight)} under scope ${releaseAnalysis.scope_version} (${releaseAnalysis.analysis_flags.join(', ')}). Nothing was uploaded.`;
   els.reportFacility.value = '';
 });
 
@@ -548,7 +516,9 @@ els.exportButton.addEventListener('click', () => {
   const payload = {
     export_version: '0.4',
     exported_at: new Date().toISOString(),
-    reports: state.localReports
+    scope_version: state.manufacturingScope?.scope_version ?? null,
+    reports: state.localReports,
+    release_analysis: state.localReports.map((report) => buildReleaseAnalysis(report, analysisContext()))
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -557,7 +527,7 @@ els.exportButton.addEventListener('click', () => {
   anchor.download = `open-worktime-local-${new Date().toISOString().slice(0, 10)}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
-  els.formStatus.textContent = `Exported ${state.localReports.length} local observation(s).`;
+  els.formStatus.textContent = `Exported ${state.localReports.length} raw observation(s) plus release-time analysis.`;
 });
 
 els.clearButton.addEventListener('click', () => {
@@ -609,7 +579,7 @@ function loadLocalReports() {
     const current = localStorage.getItem(STORAGE_KEY);
     if (current) {
       const parsed = JSON.parse(current);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed.map(normalizeRawReport) : [];
     }
 
     for (const legacyKey of LEGACY_STORAGE_KEYS) {
@@ -627,12 +597,15 @@ function loadLocalReports() {
   }
 }
 
+function normalizeRawReport(report) {
+  const { analysis_weight: _analysisWeight, analysis_flags: _analysisFlags, ...raw } = report ?? {};
+  return raw;
+}
+
 function migrateLegacyReport(report) {
   const rawFacility = String(report.facility_id ?? '').trim();
   const looksCanonical = rawFacility.startsWith('osh-');
-  const workRole = report.work_role ?? 'other_unknown';
-  const highIncome = report.high_income_5x ?? 'unknown';
-  const base = {
+  return {
     schema_version: '0.4',
     id: report.id ?? `legacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     brand_id: report.brand_id,
@@ -641,23 +614,17 @@ function migrateLegacyReport(report) {
     facility_id: looksCanonical ? rawFacility : null,
     facility_text: report.facility_text ?? (rawFacility && !looksCanonical ? rawFacility : null),
     employment_type: report.employment_type,
-    work_role: workRole,
-    high_income_5x: highIncome,
+    work_role: report.work_role ?? 'other_unknown',
+    high_income_5x: report.high_income_5x ?? 'unknown',
     weekly_hours_bucket: report.weekly_hours_bucket,
     period_basis: PERIOD_BASIS,
     submitted_at: report.submitted_at ?? report.observed_at ?? new Date().toISOString(),
     source: 'local_prototype'
   };
-  const analysis = deriveAnalysis(base);
-  return {
-    ...base,
-    analysis_weight: report.analysis_weight ?? analysis.weight,
-    analysis_flags: report.analysis_flags ?? analysis.flags
-  };
 }
 
 function saveLocalReports() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.localReports));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.localReports.map(normalizeRawReport)));
   window.dispatchEvent(new CustomEvent('open-worktime:reports-changed'));
 }
 
