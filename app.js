@@ -19,20 +19,43 @@ const EMPLOYMENT_TYPES = [
   { id: 'other_unknown', label: 'Other / unknown', zh: '其他 / 不确定' }
 ];
 
-const STORAGE_KEY = 'open-worktime-local-reports-v0.3';
-const LEGACY_STORAGE_KEY_V02 = 'open-worktime-local-reports-v0.2';
-const LEGACY_STORAGE_KEY_V01 = 'open-worktime-local-reports-v0.1';
+const WORK_ROLES = [
+  { id: 'manufacturing_frontline', label: 'Production / assembly', zh: '一线生产 / 装配' },
+  { id: 'manufacturing_support', label: 'Manufacturing support', zh: '质检 / 设备 / 仓储 / 生产支持' },
+  { id: 'management', label: 'Management', zh: '管理岗' },
+  { id: 'sales', label: 'Sales', zh: '销售' },
+  { id: 'corporate_function', label: 'Corporate function', zh: '总部 / 职能岗' },
+  { id: 'other_unknown', label: 'Other / unknown', zh: '其他 / 不确定' }
+];
+
+const ROLE_WEIGHTS = {
+  manufacturing_frontline: 1,
+  manufacturing_support: 1,
+  management: 0.25,
+  sales: 0,
+  corporate_function: 0,
+  other_unknown: 0.5
+};
+
+const STORAGE_KEY = 'open-worktime-local-reports-v0.4';
+const LEGACY_STORAGE_KEYS = [
+  'open-worktime-local-reports-v0.3',
+  'open-worktime-local-reports-v0.2',
+  'open-worktime-local-reports-v0.1'
+];
 const PERIOD_BASIS = 'last_4_complete_weeks';
 
 const state = {
   brands: [],
   companies: [],
   facilities: [],
+  facilityLinks: [],
   demoDistribution: [],
   localReports: loadLocalReports(),
   selectedBrandId: null,
   employmentFilter: 'all',
-  geographyFilter: 'all'
+  geographyFilter: 'all',
+  analysisMode: 'weighted'
 };
 
 const els = {
@@ -43,6 +66,8 @@ const els = {
   brandMeta: document.querySelector('#brand-meta'),
   brandSource: document.querySelector('#brand-source'),
   sampleCount: document.querySelector('#sample-count'),
+  sampleEffective: document.querySelector('#sample-effective'),
+  analysisFilters: document.querySelector('#analysis-filters'),
   employmentFilters: document.querySelector('#employment-filters'),
   geographyFilters: document.querySelector('#geography-filters'),
   histogram: document.querySelector('#histogram'),
@@ -50,9 +75,11 @@ const els = {
   reportForm: document.querySelector('#report-form'),
   reportBrand: document.querySelector('#report-brand'),
   reportCountry: document.querySelector('#report-country'),
-  reportSubdivision: document.querySelector('#report-subdivision'),
+  reportRegion: document.querySelector('#report-region'),
   reportFacility: document.querySelector('#report-facility'),
   reportEmployment: document.querySelector('#report-employment'),
+  reportRole: document.querySelector('#report-role'),
+  reportHighIncome: document.querySelector('#report-high-income'),
   reportHours: document.querySelector('#report-hours'),
   formStatus: document.querySelector('#form-status'),
   recordPreview: document.querySelector('#record-preview'),
@@ -64,26 +91,30 @@ boot();
 
 async function boot() {
   try {
-    const [brandsResponse, companiesResponse, facilitiesResponse, distributionResponse] = await Promise.all([
+    const [brandsResponse, companiesResponse, facilitiesResponse, linksResponse, distributionResponse] = await Promise.all([
       fetch('./data/brands.json'),
       fetch('./data/companies.json'),
       fetch('./data/facilities.json'),
+      fetch('./data/facility-links.json'),
       fetch('./data/demo-distribution.json')
     ]);
 
-    if (!brandsResponse.ok || !companiesResponse.ok || !facilitiesResponse.ok || !distributionResponse.ok) {
+    if (![brandsResponse, companiesResponse, facilitiesResponse, linksResponse, distributionResponse].every((response) => response.ok)) {
       throw new Error('Failed to load prototype data.');
     }
 
     state.brands = await brandsResponse.json();
     state.companies = await companiesResponse.json();
     state.facilities = await facilitiesResponse.json();
+    state.facilityLinks = await linksResponse.json();
     state.demoDistribution = await distributionResponse.json();
     state.selectedBrandId = state.brands.find((brand) => brand.demo)?.id ?? state.brands[0]?.id ?? null;
 
     populateBrandControls();
     populateEmploymentControls();
+    populateRoleControls();
     populateHourControls();
+    renderAnalysisFilters();
     renderRecordPreview(state.localReports.length ? toSubmissionPayload(state.localReports.at(-1)) : null);
 
     if (state.selectedBrandId) selectBrand(state.selectedBrandId);
@@ -120,10 +151,37 @@ function populateEmploymentControls() {
   renderEmploymentFilters();
 }
 
+function populateRoleControls() {
+  els.reportRole.innerHTML = WORK_ROLES
+    .map((role) => `<option value="${role.id}">${role.label} · ${role.zh}</option>`)
+    .join('');
+}
+
 function populateHourControls() {
   els.reportHours.innerHTML = HOURS_BUCKETS
     .map((bucket) => `<option value="${bucket.id}">${bucket.label} h/week</option>`)
     .join('');
+}
+
+function renderAnalysisFilters() {
+  if (!els.analysisFilters) return;
+  const filters = [
+    { id: 'weighted', label: 'Manufacturing-weighted' },
+    { id: 'all', label: 'All raw reports' }
+  ];
+  els.analysisFilters.innerHTML = '';
+  for (const filter of filters) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `chip${state.analysisMode === filter.id ? ' active' : ''}`;
+    button.textContent = filter.label;
+    button.addEventListener('click', () => {
+      state.analysisMode = filter.id;
+      renderAnalysisFilters();
+      renderBrand();
+    });
+    els.analysisFilters.appendChild(button);
+  }
 }
 
 function renderEmploymentFilters() {
@@ -150,7 +208,7 @@ function renderEmploymentFilters() {
 function renderGeographyFilters() {
   if (!els.geographyFilters) return;
 
-  const filters = [{ id: 'all', label: 'All regions' }, ...collectBrandGeographies(state.selectedBrandId)];
+  const filters = [{ id: 'all', label: 'All / no region required' }, ...collectBrandGeographies(state.selectedBrandId)];
   els.geographyFilters.innerHTML = '';
 
   for (const filter of filters) {
@@ -169,23 +227,19 @@ function renderGeographyFilters() {
 
 function collectBrandGeographies(brandId) {
   if (!brandId) return [];
-  const countries = new Set();
-  const subdivisions = new Set();
+  const countries = new Map();
+  const regions = new Map();
 
-  const rows = [
-    ...state.demoDistribution.filter((row) => row.brand_id === brandId),
-    ...state.localReports.filter((row) => row.brand_id === brandId)
-  ];
-
-  for (const row of rows) {
-    if (row.country) countries.add(row.country);
-    const subdivision = effectiveSubdivision(row);
-    if (subdivision) subdivisions.add(subdivision);
+  for (const report of state.localReports.filter((row) => row.brand_id === brandId)) {
+    const country = effectiveCountry(report);
+    const region = effectiveWorkRegion(report);
+    if (country) countries.set(country.toLowerCase(), country.toUpperCase());
+    if (region) regions.set(normalizeRegion(region), region);
   }
 
   return [
-    ...[...countries].sort().map((code) => ({ id: `country:${code}`, label: code })),
-    ...[...subdivisions].sort().map((code) => ({ id: `subdivision:${code}`, label: code }))
+    ...[...regions.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, label]) => ({ id: `region:${id}`, label })),
+    ...[...countries.values()].sort().map((code) => ({ id: `country:${code}`, label: code }))
   ];
 }
 
@@ -209,12 +263,14 @@ function renderBrand() {
   if (!brand) return;
 
   const owner = getOwner(brand);
-  const counts = aggregateCounts(brand.id, state.employmentFilter, state.geographyFilter);
-  const total = counts.reduce((sum, value) => sum + value, 0);
+  const aggregate = aggregateBrand(brand.id, state.employmentFilter, state.geographyFilter, state.analysisMode);
+  const counts = aggregate.counts;
+  const totalWeight = counts.reduce((sum, value) => sum + value, 0);
   const maxCount = Math.max(1, ...counts);
 
   els.brandName.textContent = brand.name;
-  els.sampleCount.textContent = total.toLocaleString();
+  els.sampleCount.textContent = String(aggregate.rawCount);
+  if (els.sampleEffective) els.sampleEffective.textContent = formatWeight(aggregate.effectiveCount);
 
   if (brand.demo) {
     els.brandMeta.textContent = `${brand.sector} · ${brand.home_country} · fictional demo entity`;
@@ -232,12 +288,12 @@ function renderBrand() {
   els.shapeNote.hidden = true;
   els.shapeNote.textContent = '';
 
-  if (total === 0) {
+  if (totalWeight === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty-chart';
     empty.innerHTML = `
-      <strong>No working-time observations under the current filters.</strong>
-      <span>${brand.demo ? 'This demo entity may not have geography metadata for every bundled row.' : 'Entity metadata can exist without any labor-condition observation for this brand or region.'}</span>
+      <strong>No weighted manufacturing observations under the current filters.</strong>
+      <span>Switch to “All raw reports” to inspect accepted context reports that carry zero manufacturing weight.</span>
     `;
     els.histogram.appendChild(empty);
     return;
@@ -245,17 +301,17 @@ function renderBrand() {
 
   HOURS_BUCKETS.forEach((bucket, index) => {
     const count = counts[index];
-    const share = (count / total) * 100;
+    const share = (count / totalWeight) * 100;
     const relativeWidth = (count / maxCount) * 100;
 
     const row = document.createElement('div');
     row.className = 'hist-row';
     row.innerHTML = `
       <span class="hist-label">${bucket.label}</span>
-      <div class="hist-track" title="${count} observations · ${share.toFixed(1)}%">
+      <div class="hist-track" title="${formatWeight(count)} weighted observations · ${share.toFixed(1)}%">
         <div class="hist-fill" style="width: ${relativeWidth.toFixed(2)}%"></div>
       </div>
-      <span class="hist-value">${count} · ${share.toFixed(1)}%</span>
+      <span class="hist-value">${formatWeight(count)} · ${share.toFixed(1)}%</span>
     `;
     els.histogram.appendChild(row);
   });
@@ -288,15 +344,20 @@ function getOwner(brand) {
   return state.companies.find((company) => company.id === brand.owner_company_id) ?? null;
 }
 
-function aggregateCounts(brandId, employmentFilter, geographyFilter) {
+function aggregateBrand(brandId, employmentFilter, geographyFilter, analysisMode) {
   const counts = HOURS_BUCKETS.map(() => 0);
+  let rawCount = 0;
+  let effectiveCount = 0;
 
   for (const row of state.demoDistribution) {
     if (row.brand_id !== brandId) continue;
     if (employmentFilter !== 'all' && row.employment_type !== employmentFilter) continue;
-    if (!matchesGeography(row, geographyFilter)) continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === row.weekly_hours_bucket);
-    if (index >= 0) counts[index] += Number(row.count) || 0;
+    if (index < 0) continue;
+    const count = Number(row.count) || 0;
+    counts[index] += count;
+    rawCount += count;
+    effectiveCount += count;
   }
 
   for (const report of state.localReports) {
@@ -304,23 +365,72 @@ function aggregateCounts(brandId, employmentFilter, geographyFilter) {
     if (employmentFilter !== 'all' && report.employment_type !== employmentFilter) continue;
     if (!matchesGeography(report, geographyFilter)) continue;
     const index = HOURS_BUCKETS.findIndex((bucket) => bucket.id === report.weekly_hours_bucket);
-    if (index >= 0) counts[index] += 1;
+    if (index < 0) continue;
+    const weight = Number.isFinite(report.analysis_weight) ? report.analysis_weight : deriveAnalysis(report).weight;
+    const applied = analysisMode === 'all' ? 1 : weight;
+    counts[index] += applied;
+    rawCount += 1;
+    effectiveCount += weight;
   }
 
-  return counts;
+  return { counts, rawCount, effectiveCount };
 }
 
 function matchesGeography(row, filter) {
   if (filter === 'all') return true;
-  if (filter.startsWith('country:')) return row.country === filter.slice('country:'.length);
-  if (filter.startsWith('subdivision:')) return effectiveSubdivision(row) === filter.slice('subdivision:'.length);
+  if (filter.startsWith('country:')) return effectiveCountry(row) === filter.slice('country:'.length);
+  if (filter.startsWith('region:')) return normalizeRegion(effectiveWorkRegion(row)) === filter.slice('region:'.length);
   return false;
 }
 
-function effectiveSubdivision(row) {
-  if (row?.subdivision_code) return row.subdivision_code;
+function effectiveCountry(row) {
+  if (row?.country) return row.country.toUpperCase();
   if (!row?.facility_id) return null;
-  return state.facilities.find((facility) => facility.id === row.facility_id)?.subdivision_code ?? null;
+  return state.facilities.find((facility) => facility.id === row.facility_id)?.country ?? null;
+}
+
+function effectiveWorkRegion(row) {
+  if (row?.work_region) return row.work_region;
+  if (!row?.facility_id) return null;
+  const facility = state.facilities.find((item) => item.id === row.facility_id);
+  return facility?.work_region ?? facility?.locality ?? facility?.subdivision_code ?? null;
+}
+
+function normalizeRegion(value) {
+  return String(value ?? '').trim().toLocaleLowerCase();
+}
+
+function deriveAnalysis(submission) {
+  const flags = [];
+  let weight = ROLE_WEIGHTS[submission.work_role] ?? 0.5;
+
+  if (submission.work_role === 'manufacturing_frontline') flags.push('manufacturing_frontline');
+  else if (submission.work_role === 'manufacturing_support') flags.push('manufacturing_support');
+  else if (submission.work_role === 'management') flags.push('management_role');
+  else if (submission.work_role === 'sales') flags.push('sales_role');
+  else if (submission.work_role === 'corporate_function') flags.push('corporate_function_role');
+  else flags.push('unknown_role');
+
+  if (submission.high_income_5x === 'yes') {
+    weight = Math.min(weight, 0.25);
+    flags.push('high_income_5x');
+  }
+
+  if (submission.facility_id) {
+    const linked = state.facilityLinks.some((link) =>
+      link.brand_id === submission.brand_id && link.facility_id === submission.facility_id
+    );
+    if (linked) {
+      flags.push('known_brand_facility');
+    } else {
+      weight = Math.min(weight, 0.25);
+      flags.push('location_mismatch_review');
+    }
+  } else if (submission.work_region || submission.country || submission.facility_text) {
+    flags.push('location_unresolved');
+  }
+
+  return { weight, flags };
 }
 
 function detectSeparatedPeaks(counts) {
@@ -340,11 +450,10 @@ function detectSeparatedPeaks(counts) {
       const first = peaks[a];
       const second = peaks[b];
       if (second - first < 2) continue;
-
       const valley = Math.min(...counts.slice(first + 1, second));
       const smallerPeak = Math.min(counts[first], counts[second]);
       if (valley <= smallerPeak * 0.45) {
-        return 'Separated peaks detected. This can be real workforce segmentation (site, role, employment identity, or region) or a sign of sample contamination. The chart is not automatically corrected; inspect identity and geography filters.';
+        return 'Separated peaks detected. This can reflect real workforce segmentation or sample contamination. Inspect employment, region, and raw-vs-weighted views before interpreting it.';
       }
     }
   }
@@ -354,19 +463,19 @@ function detectSeparatedPeaks(counts) {
 
 function brandSearchText(brand) {
   const owner = getOwner(brand);
-  return [
-    brand.name,
-    ...(brand.aliases ?? []),
-    owner?.name,
-    owner?.short_name
-  ].filter(Boolean).join(' ').toLowerCase();
+  return [brand.name, ...(brand.aliases ?? []), owner?.name, owner?.short_name]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function handleBrandSearch() {
   const query = els.brandSearch.value.trim().toLowerCase();
   if (!query) return;
 
-  const exact = state.brands.find((brand) => brand.name.toLowerCase() === query || (brand.aliases ?? []).some((alias) => alias.toLowerCase() === query));
+  const exact = state.brands.find((brand) =>
+    brand.name.toLowerCase() === query || (brand.aliases ?? []).some((alias) => alias.toLowerCase() === query)
+  );
   const partial = state.brands.find((brand) => brandSearchText(brand).includes(query));
   const match = exact ?? partial;
 
@@ -387,61 +496,44 @@ els.brandSearch.addEventListener('keydown', (event) => {
 els.reportFacility.addEventListener('input', () => {
   const knownFacility = resolveKnownFacility(els.reportFacility.value.trim());
   if (!knownFacility) return;
-  els.reportCountry.value = knownFacility.country;
-  if (els.reportSubdivision && knownFacility.subdivision_code) {
-    els.reportSubdivision.value = knownFacility.subdivision_code;
-  }
+  els.reportCountry.value = knownFacility.country ?? '';
+  els.reportRegion.value = knownFacility.work_region ?? knownFacility.locality ?? '';
 });
 
 els.reportForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
-  const country = els.reportCountry.value.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(country)) {
-    els.formStatus.textContent = 'Country must be a two-letter ISO code, such as CN, US, or DE.';
+  const rawCountry = els.reportCountry.value.trim().toUpperCase();
+  if (rawCountry && !/^[A-Z]{2}$/.test(rawCountry)) {
+    els.formStatus.textContent = 'Country must be a two-letter code such as CN, US, or DE, or left blank.';
     return;
   }
 
   const facilityInput = els.reportFacility.value.trim();
   const knownFacility = resolveKnownFacility(facilityInput);
-  if (knownFacility && knownFacility.country !== country) {
-    els.formStatus.textContent = `That known facility is cataloged in ${knownFacility.country}. Please use the matching country code or clear the facility.`;
-    return;
-  }
-
-  const rawSubdivision = els.reportSubdivision?.value.trim().toUpperCase() ?? '';
-  const subdivisionCode = knownFacility?.subdivision_code ?? (rawSubdivision || null);
-
-  if (subdivisionCode && !/^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(subdivisionCode)) {
-    els.formStatus.textContent = 'Region must use an ISO 3166-2 code such as CN-SH, US-TX, or DE-BB.';
-    return;
-  }
-
-  if (subdivisionCode && !subdivisionCode.startsWith(`${country}-`)) {
-    els.formStatus.textContent = `Region ${subdivisionCode} does not match country ${country}.`;
-    return;
-  }
-
-  if (knownFacility?.subdivision_code && rawSubdivision && rawSubdivision !== knownFacility.subdivision_code) {
-    els.formStatus.textContent = `That known facility is cataloged in ${knownFacility.subdivision_code}.`;
-    return;
-  }
+  const country = knownFacility?.country ?? (rawCountry || null);
+  const workRegion = knownFacility?.work_region ?? knownFacility?.locality ?? (els.reportRegion.value.trim() || null);
 
   const submission = {
-    schema_version: '0.3',
+    schema_version: '0.4',
     brand_id: els.reportBrand.value,
     country,
-    subdivision_code: subdivisionCode,
+    work_region: workRegion,
     facility_id: knownFacility?.id ?? null,
     facility_text: facilityInput && !knownFacility ? facilityInput : null,
     employment_type: els.reportEmployment.value,
+    work_role: els.reportRole.value,
+    high_income_5x: els.reportHighIncome.value,
     weekly_hours_bucket: els.reportHours.value,
     period_basis: PERIOD_BASIS
   };
 
+  const analysis = deriveAnalysis(submission);
   const report = {
     ...submission,
     id: globalThis.crypto?.randomUUID?.() ?? `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    analysis_weight: analysis.weight,
+    analysis_flags: analysis.flags,
     submitted_at: new Date().toISOString(),
     source: 'local_prototype'
   };
@@ -450,13 +542,13 @@ els.reportForm.addEventListener('submit', (event) => {
   saveLocalReports();
   renderRecordPreview(submission);
   selectBrand(report.brand_id);
-  els.formStatus.textContent = 'Saved locally. Region is coarse by design; no precise worker location is collected. Nothing was uploaded.';
+  els.formStatus.textContent = `Saved locally. Simulated manufacturing weight: ${formatWeight(report.analysis_weight)} (${report.analysis_flags.join(', ')}). Nothing was uploaded.`;
   els.reportFacility.value = '';
 });
 
 els.exportButton.addEventListener('click', () => {
   const payload = {
-    export_version: '0.3',
+    export_version: '0.4',
     exported_at: new Date().toISOString(),
     reports: state.localReports
   };
@@ -475,7 +567,6 @@ els.clearButton.addEventListener('click', () => {
     els.formStatus.textContent = 'There are no local prototype submissions to clear.';
     return;
   }
-
   if (!window.confirm('Clear all local prototype submissions stored in this browser?')) return;
   state.localReports = [];
   saveLocalReports();
@@ -489,21 +580,22 @@ function resolveKnownFacility(value) {
   if (!value) return null;
   const normalized = value.toLowerCase();
   return state.facilities.find((facility) =>
-    facility.id.toLowerCase() === normalized ||
-    String(facility.os_id ?? '').toLowerCase() === normalized
+    facility.id.toLowerCase() === normalized || String(facility.os_id ?? '').toLowerCase() === normalized
   ) ?? null;
 }
 
 function toSubmissionPayload(report) {
   if (!report) return null;
   return {
-    schema_version: '0.3',
+    schema_version: '0.4',
     brand_id: report.brand_id,
-    country: report.country,
-    subdivision_code: effectiveSubdivision(report),
+    country: effectiveCountry(report),
+    work_region: effectiveWorkRegion(report),
     facility_id: report.facility_id ?? null,
     facility_text: report.facility_text ?? null,
     employment_type: report.employment_type,
+    work_role: report.work_role ?? 'other_unknown',
+    high_income_5x: report.high_income_5x ?? 'unknown',
     weekly_hours_bucket: report.weekly_hours_bucket,
     period_basis: PERIOD_BASIS
   };
@@ -511,12 +603,7 @@ function toSubmissionPayload(report) {
 
 function renderRecordPreview(payload) {
   if (!els.recordPreview) return;
-  if (!payload) {
-    els.recordPreview.textContent = 'No local report yet.';
-    return;
-  }
-
-  els.recordPreview.textContent = JSON.stringify(payload, null, 2);
+  els.recordPreview.textContent = payload ? JSON.stringify(payload, null, 2) : 'No local report yet.';
 }
 
 function loadLocalReports() {
@@ -527,7 +614,7 @@ function loadLocalReports() {
       return Array.isArray(parsed) ? parsed : [];
     }
 
-    for (const legacyKey of [LEGACY_STORAGE_KEY_V02, LEGACY_STORAGE_KEY_V01]) {
+    for (const legacyKey of LEGACY_STORAGE_KEYS) {
       const legacy = localStorage.getItem(legacyKey);
       if (!legacy) continue;
       const parsedLegacy = JSON.parse(legacy);
@@ -536,7 +623,6 @@ function loadLocalReports() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
       return migrated;
     }
-
     return [];
   } catch {
     return [];
@@ -546,25 +632,40 @@ function loadLocalReports() {
 function migrateLegacyReport(report) {
   const rawFacility = String(report.facility_id ?? '').trim();
   const looksCanonical = rawFacility.startsWith('osh-');
-  return {
-    schema_version: '0.3',
+  const workRole = report.work_role ?? 'other_unknown';
+  const highIncome = report.high_income_5x ?? 'unknown';
+  const base = {
+    schema_version: '0.4',
     id: report.id ?? `legacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     brand_id: report.brand_id,
-    country: report.country,
-    subdivision_code: report.subdivision_code ?? null,
+    country: report.country ?? null,
+    work_region: report.work_region ?? report.subdivision_code ?? null,
     facility_id: looksCanonical ? rawFacility : null,
     facility_text: report.facility_text ?? (rawFacility && !looksCanonical ? rawFacility : null),
     employment_type: report.employment_type,
+    work_role: workRole,
+    high_income_5x: highIncome,
     weekly_hours_bucket: report.weekly_hours_bucket,
     period_basis: PERIOD_BASIS,
     submitted_at: report.submitted_at ?? report.observed_at ?? new Date().toISOString(),
     source: 'local_prototype'
+  };
+  const analysis = deriveAnalysis(base);
+  return {
+    ...base,
+    analysis_weight: report.analysis_weight ?? analysis.weight,
+    analysis_flags: report.analysis_flags ?? analysis.flags
   };
 }
 
 function saveLocalReports() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.localReports));
   window.dispatchEvent(new CustomEvent('open-worktime:reports-changed'));
+}
+
+function formatWeight(value) {
+  const numeric = Number(value) || 0;
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 function escapeHtml(value) {
