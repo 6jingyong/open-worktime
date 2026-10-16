@@ -79,7 +79,6 @@ jobs:
           partner_brief = Path('docs/RESEARCH_PARTNERS.md').read_text().lower()
           better_work = Path('docs/BETTER_WORK_COLLABORATION.md').read_text().lower()
           readme = Path('README.md').read_text().lower()
-          normalized_brief = partner_brief.replace('**', '')
 
           for path in [
               'partners.html',
@@ -93,9 +92,9 @@ jobs:
           assert 'no github knowledge is required' in partner_html
           assert 'raw microdata' in partner_html
           assert (
-              'raw microdata does not need to become public' in normalized_brief
-              or 'remain restricted' in normalized_brief
-          ), 'partner brief must preserve the restricted-raw-data option'
+              'partner keeps raw microdata' in partner_brief
+              and 'approved aggregates' in partner_brief
+          ), 'partner brief must preserve an aggregate-only option with raw microdata retained by the partner'
           assert 'safe aggregates' in partner_html
           assert 'proposal draft' in better_work and 'not a claim of partnership' in better_work
           assert 'research partner brief' in readme
