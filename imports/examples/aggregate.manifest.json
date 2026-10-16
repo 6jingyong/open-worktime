@@ -1,0 +1,36 @@
+{
+  "import_version": "external-import-v1",
+  "source": {
+    "source_id": "example-aggregate-survey",
+    "title": "Example aggregate working-time distribution",
+    "publisher": "Open Worktime fixture",
+    "url": "https://example.invalid/aggregate-survey",
+    "retrieved_at": "2026-10-16",
+    "reuse_status": "redistributable",
+    "license_name": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "notes": "Synthetic fixture only."
+  },
+  "input": {
+    "format": "csv",
+    "record_kind": "aggregate",
+    "file": "aggregate.csv"
+  },
+  "mapping": {
+    "source_record_id": { "column": "row_id" },
+    "brand_id": { "column": "brand_id" },
+    "brand_name_raw": { "column": "brand" },
+    "country": { "column": "country", "transform": "upper" },
+    "work_region": { "column": "region" },
+    "weekly_hours_bucket": { "column": "hours_bucket" },
+    "count": { "column": "count" },
+    "period_basis": {
+      "column": "period",
+      "map": { "typical": "typical_week" }
+    },
+    "employment_type": { "constant": "other_unknown" },
+    "work_role": { "constant": "other_unknown" },
+    "high_income_5x": { "constant": "unknown" },
+    "observed_at": { "constant": "2026-Q3" }
+  }
+}
