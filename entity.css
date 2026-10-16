@@ -1,0 +1,28 @@
+.source-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.source-note a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.empty-chart {
+  min-height: 150px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.empty-chart strong {
+  color: var(--text);
+  font-size: 1.05rem;
+}
