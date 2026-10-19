@@ -110,3 +110,9 @@ jobs:
           test -s docs/DATA_ACQUISITION.md
           test -s docs/AREA_SURVEY_PILOT.md
           grep -q 'research@betterwork.org' docs/DATA_ACQUISITION.md
+
+      - name: Check and test browser aggregate preview
+        run: |
+          node --check partner-preview.js
+          node --check partner-preview.mjs
+          node --test test/partner-preview.test.mjs
