@@ -13,6 +13,7 @@
     <a class="brand-mark" href="./">Open Worktime</a>
     <nav class="partner-nav" aria-label="Partner navigation">
       <a href="./">Live prototype</a>
+      <a href="#preview">Try an aggregate preview</a>
       <a href="#collaborate">How to collaborate</a>
       <a href="#privacy">Privacy</a>
     </nav>
@@ -25,7 +26,7 @@
       <p class="partner-lead">Open Worktime is an open public-interest project for one simple question: <strong>how many hours do the people who make our products actually work?</strong></p>
       <p class="partner-lead muted">We are building a transparent, privacy-minimal way to connect existing labor research with factories, regions and consumer-facing brands—without asking data partners to rebuild their data systems.</p>
       <div class="partner-actions">
-        <a class="action-primary" href="./">See the prototype</a>
+        <a class="action-primary" href="#preview">Try an aggregate preview</a>
         <a class="action-secondary" href="#collaborate">See the minimum data we need</a>
       </div>
       <p class="no-github-note"><strong>No GitHub knowledge is required.</strong> If someone from Open Worktime sent you this page, replying to that email is enough to start.</p>
@@ -47,6 +48,45 @@
         <h2>Do not make the partner do the integration.</h2>
         <p>Partners can keep their existing survey structure. We take responsibility for source-specific adapters, field mapping, hour normalization, entity resolution and public-facing presentation.</p>
       </article>
+    </section>
+
+    <section class="partner-section minimum-box" id="preview" aria-labelledby="preview-heading">
+      <div class="section-heading">
+        <p class="eyebrow">See what a small collaboration could produce</p>
+        <h2 id="preview-heading">From a count table to a working-time distribution.</h2>
+        <p>Try our existing fictional example first. You can also select a small, approved aggregate CSV on your computer. It is read in this browser; file contents never leave this page and are not saved or published.</p>
+      </div>
+      <div class="partner-actions">
+        <button class="action-primary" id="preview-example" type="button">Show the fictional example</button>
+        <a class="action-secondary" href="./docs/examples/partner-aggregate-example.csv" download>Download example CSV</a>
+      </div>
+      <div class="preview-file">
+        <label for="preview-file">Or select an aggregate CSV on this computer (up to 1 MiB)</label>
+        <input id="preview-file" type="file" accept=".csv,text/csv" aria-describedby="preview-format" />
+        <button class="action-secondary" id="preview-clear" type="button">Clear preview</button>
+      </div>
+      <p class="partner-note" id="preview-format">This optional preview uses the four columns in the example, with all ten hour buckets per factory and survey round. Counts must be unweighted whole numbers in mutually exclusive buckets. Never replace missing or suppressed counts with zero. No names, worker records or other columns are needed.</p>
+      <details class="preview-format">
+        <summary>CSV columns and bucket codes</summary>
+        <p><code>anonymous_factory_id, survey_round, weekly_hours_bucket, count</code></p>
+        <p>Bucket codes, in order: <code>lt_35, 35_40, 40_45, 45_50, 50_55, 55_60, 60_65, 65_70, 70_75, gte_75</code>. Each interval includes its lower bound and excludes its upper bound. <code>gte_75</code> means 75 hours or more.</p>
+        <p>Different columns, weighted estimates, suppressed cells or a different file format? Reply to the person who shared this page. We can discuss an adapter; you do not need to reformat data to start a conversation.</p>
+      </details>
+      <p id="preview-status" class="preview-status" role="status" aria-live="polite">No file selected. The example contains fictional counts only; it is not Better Work data.</p>
+      <noscript><p>Enable JavaScript to use the local preview. You can still download the example and read the collaboration options below.</p></noscript>
+      <div id="preview-result" hidden>
+        <label for="preview-group">Anonymous factory ID · survey round</label>
+        <select id="preview-group" aria-describedby="preview-groups-note"></select>
+        <p class="partner-note" id="preview-groups-note"></p>
+        <p class="preview-total" id="preview-total"></p>
+        <table class="preview-table">
+          <caption>Weekly-hours buckets · counts as supplied, without manufacturing weights</caption>
+          <thead><tr><th scope="col">Hours / week</th><th scope="col">Count</th><th scope="col">Share</th><th scope="col"><span class="sr-only">Distribution bars</span></th></tr></thead>
+          <tbody id="preview-rows"></tbody>
+        </table>
+        <p class="partner-note">Shares use this group's total only and may not sum to exactly 100% after rounding. Counts describe the supplied sample; they do not establish a representative workforce estimate.</p>
+        <p class="partner-note"><strong>Before any public use:</strong> agree the original hours question, reference period, source, country, attribution, publication permission and suppression rules. These four columns do not establish those facts. Anonymous IDs are not resolved to real factories or brands here, and survey rounds are not relabeled as our four-week community measure.</p>
+      </div>
     </section>
 
     <section class="partner-section" id="collaborate">
@@ -137,8 +177,8 @@
       <h2>You do not need to commit to a data transfer.</h2>
       <p>Start by showing us a questionnaire, a data dictionary, a sample of column names, or an existing public report. We can tell you what is usable, what would remain private, and what public output could be produced before any data changes hands.</p>
       <div class="partner-actions">
-        <a class="action-primary" href="./">Explore the live prototype</a>
-        <a class="action-secondary" href="./docs/RESEARCH_PARTNERS.md">Read the detailed partner brief</a>
+        <a class="action-primary" href="#preview">Try the aggregate preview</a>
+        <a class="action-secondary" href="#collaborate">Review collaboration options</a>
       </div>
     </section>
   </main>
@@ -147,5 +187,6 @@
     <span>Open Worktime · public-interest prototype · no GitHub account required to collaborate</span>
     <a href="./">Prototype</a>
   </footer>
+  <script type="module" src="./partner-preview.js"></script>
 </body>
 </html>

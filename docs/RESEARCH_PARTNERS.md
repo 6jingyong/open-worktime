@@ -39,6 +39,16 @@ A partner can simply reply to an outreach email and share any of the following t
 
 Open Worktime can do the schema mapping and build a source-specific adapter.
 
+### See the aggregate path before sharing anything
+
+Open the [browser aggregate preview](https://6jingyong.github.io/open-worktime/partners.html#preview) and click **Show the fictional example**. It uses our existing example CSV, not Better Work data. The result shows counts, percentages and sample size for one anonymous factory and survey round at a time.
+
+You can download that CSV or select a small approved aggregate CSV on your own computer. File contents are read locally and are not uploaded, stored or published. **Clear preview** removes the current result; reloading the page also starts empty.
+
+This optional preview accepts only the four example columns and all ten mutually exclusive buckets, with unweighted whole-number counts. Include explicit zeros only where the source confirms a zero. Missing or suppressed cells, duplicate buckets, weighted estimates and extra columns are rejected rather than silently changed. Other formats are welcome for a conversation; you do not need to convert them to use our schema.
+
+A preview is not a publication approval. We still need to agree source definitions, reference period, attribution, permitted public outputs and suppression rules. No factory-to-brand mapping is inferred by this preview.
+
 ## Three collaboration levels
 
 ### Level 1 · Metadata only
