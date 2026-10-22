@@ -14,12 +14,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test local preview server
+        run: node --test test/local-preview.test.mjs
+
+      - name: Test fictional city comparisons and export semantics
+        run: node --test test/city-demo.test.mjs test/survey.test.mjs
+
       - name: Check JavaScript syntax
         run: |
           node --check app.js
           node --check analysis.js
           node --check facility.js
           node --check geography.js
+          node --check cities.js
+          node --check survey-app.js
+          node --check survey.mjs
+          node --check scripts/generate-survey-demo.mjs
+          node --check scripts/serve.mjs
+          node --check scripts/start-preview.mjs
+          node --check city-demo.mjs
+          node --check scripts/generate-city-demo.mjs
           node --check backend/src/index.js
           node --check backend/src/validate.js
           node --check backend/operator/lib.mjs
@@ -28,6 +47,8 @@ jobs:
       - name: Validate JSON files
         run: |
           python -m json.tool data/brands.json > /dev/null
+          python -m json.tool data/city-scenarios.json > /dev/null
+          python -m json.tool data/survey-manifest.json > /dev/null
           python -m json.tool data/companies.json > /dev/null
           python -m json.tool data/facilities.json > /dev/null
           python -m json.tool data/facility-links.json > /dev/null

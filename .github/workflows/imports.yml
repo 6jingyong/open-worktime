@@ -9,10 +9,28 @@ permissions:
 
 jobs:
   validate-imports:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
       - name: Check importer JavaScript
         run: |
@@ -35,21 +53,21 @@ jobs:
 
       - name: Smoke-test reproducible generic bundles
         run: |
-          node imports/import.mjs imports/examples/individual.manifest.json --out /tmp/individual.json
-          node imports/import.mjs imports/examples/aggregate.manifest.json --out /tmp/aggregate.json
-          node imports/import.mjs imports/examples/mean.manifest.json --out /tmp/mean.json
+          node imports/import.mjs imports/examples/individual.manifest.json --out output/import-smoke/individual.json
+          node imports/import.mjs imports/examples/aggregate.manifest.json --out output/import-smoke/aggregate.json
+          node imports/import.mjs imports/examples/mean.manifest.json --out output/import-smoke/mean.json
           python - <<'PY'
           import json
           from pathlib import Path
 
-          individual = json.loads(Path('/tmp/individual.json').read_text())
-          aggregate = json.loads(Path('/tmp/aggregate.json').read_text())
-          mean = json.loads(Path('/tmp/mean.json').read_text())
+          individual = json.loads(Path('output/import-smoke/individual.json').read_text())
+          aggregate = json.loads(Path('output/import-smoke/aggregate.json').read_text())
+          mean = json.loads(Path('output/import-smoke/mean.json').read_text())
 
           assert individual['input']['row_count'] == 2
           assert len(individual['input']['sha256']) == 64
           assert individual['summary']['canonical_candidates'] == 1
-          assert 'employee_name' not in Path('/tmp/individual.json').read_text()
+          assert 'employee_name' not in Path('output/import-smoke/individual.json').read_text()
 
           assert aggregate['input']['row_count'] == 2
           assert [row['count'] for row in aggregate['records']] == [18, 31]
@@ -65,16 +83,16 @@ jobs:
         run: |
           node imports/adapters/import-source.mjs ilostat \
             imports/adapters/fixtures/ilostat-sample.csv \
-            --out /tmp/ilostat.json
+            --out output/import-smoke/ilostat.json
           node imports/adapters/import-source.mjs workingtime \
             imports/adapters/fixtures/workingtime-sample.csv \
-            --out /tmp/workingtime.json
+            --out output/import-smoke/workingtime.json
           python - <<'PY'
           import json
           from pathlib import Path
 
-          ilo = json.loads(Path('/tmp/ilostat.json').read_text())
-          wt = json.loads(Path('/tmp/workingtime.json').read_text())
+          ilo = json.loads(Path('output/import-smoke/ilostat.json').read_text())
+          wt = json.loads(Path('output/import-smoke/workingtime.json').read_text())
 
           assert len(ilo['records']) == 2
           assert ilo['records'][0]['measure_type'] == 'mean_weekly_hours'
@@ -86,7 +104,7 @@ jobs:
           assert wt['records'][0]['measure_type'] == 'schedule_span_hours'
           assert all(row['publishable'] is False for row in wt['records'])
           assert all(row['comparability'] == 'context_only' for row in wt['records'])
-          assert 'department' not in Path('/tmp/workingtime.json').read_text()
+          assert 'department' not in Path('output/import-smoke/workingtime.json').read_text()
           PY
 
       - name: Check required import files

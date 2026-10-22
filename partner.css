@@ -16,7 +16,7 @@
 
 .partner-hero {
   max-width: 980px;
-  padding: 76px 0 56px;
+  padding: 44px 0 32px;
 }
 
 .partner-hero h1 { max-width: 1040px; }
@@ -190,6 +190,8 @@
 .preview-file button { font: inherit; }
 .preview-format { margin-top: 20px; overflow-wrap: anywhere; }
 .preview-format summary { cursor: pointer; font-weight: 700; }
+#preview .section-heading h2 { font-size:clamp(1.4rem,3vw,1.9rem); }
+#preview .partner-actions { margin-top:16px; }
 .preview-format p { margin-top: 12px; }
 .preview-status { margin: 24px 0 16px; padding: 14px; background: var(--accent-soft); border-radius: 10px; }
 .preview-error { color: var(--warning); background: var(--warning-bg); }

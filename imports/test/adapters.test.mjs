@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   adaptIlostatRows,
   buildIlostatBundleFromCsv,
@@ -15,7 +16,7 @@ import {
 import { parseCsv } from '../lib.mjs';
 import { readFileSync } from 'node:fs';
 
-const fixtureDir = new URL('../adapters/fixtures/', import.meta.url).pathname;
+const fixtureDir = fileURLToPath(new URL('../adapters/fixtures/', import.meta.url));
 
 test('ILOSTAT adapter keeps only total-sex manufacturing rows', () => {
   const rows = parseCsv(readFileSync(resolve(fixtureDir, 'ilostat-sample.csv'), 'utf8'));

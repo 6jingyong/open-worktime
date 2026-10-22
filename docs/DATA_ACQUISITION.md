@@ -29,6 +29,18 @@ Better Work worker microdata
 
 The key unknowns are access rights and factory identifiers, not whether weekly-hours observations exist.
 
+### Access-route recheck · 2026-10-20
+
+The [official Jordan programme page](https://betterwork.org/jordan/our-programme/) states that operations have been paused since June 2025 because of funding cuts. This does not establish whether historical research data can still be accessed. The [Better Work research page](https://betterwork.org/research/) continues to direct research proposals and data requests to `research@betterwork.org`.
+
+The next practical step is therefore to ask the research team about **existing historical data, a data dictionary or an already approved aggregate table**, rather than depending on a new Jordan collection or requesting a custom export immediately. Access, response time and permission to publish remain unconfirmed.
+
+The [Transparency Portal's issues page](https://portal.betterwork.org/transparency/issues) says working time is assessed but is not subject to public reporting there. The page also contains old rollout dates, so it should not be treated as a fresh operational status notice. In any case, public compliance findings are not a worker-hour distribution and cannot fill the current data gap.
+
+For the first local demonstration, accept an anonymous factory or manufacturing-region distribution without requiring a brand link. Require genuine worker observations or counts, the original working-time definition, reference period, sample size, provenance and terms permitting the intended use. Preserve source bins when they cannot be mapped exactly to our ten buckets; never estimate missing cells from a mean or a chart.
+
+The immediate deliverable should be a short feasibility comparison of the leading sources and a low-burden inquiry draft. Sending outreach remains a separate, explicitly authorized action. GitHub publication is not a prerequisite for this local feasibility work.
+
 ### What to request
 
 Ask the Better Work research team for the minimum privacy-preserving fields needed for Open Worktime:
@@ -45,6 +57,8 @@ Ask the Better Work research team for the minimum privacy-preserving fields need
 Do **not** request names, phone numbers, employee IDs, exact home locations, or any direct personal identifiers.
 
 ### Proposed outreach
+
+For the first contact, prefer the shorter [tool trial and feedback invitation](OUTREACH_READINESS.md), checked on 2026-10-23. The detailed data request below is a follow-up once the recipient expresses interest. Neither draft authorizes sending email.
 
 Contact: `research@betterwork.org`
 

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="载入匿名调研 CSV，按工作单位、用工关系和日期比较每周工时分布。">
+  <title>六座城的一周 · Open Worktime</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./cities.css">
+</head>
+<body>
+  <a class="skip-link" href="#observatory">跳到工时观察</a>
+  <header class="site-header">
+    <a class="brand-mark" href="./">Open Worktime</a>
+    <nav aria-label="页面导航"><a href="./">公开原型</a><a href="./partners.html">研究合作</a><span id="dataset-badge" class="badge city-demo-badge">CSV 演示</span></nav>
+  </header>
+  <main class="city-main">
+    <section class="city-hero"><div><p class="eyebrow">六个世界，同一个关于时间的问题</p><h1>六座城的一周</h1></div><p class="city-lead">载入调研，看看不同工作关系中的时间分布。</p></section>
+    <div id="city-picker" class="city-picker" role="group" aria-label="选择虚构城市"></div>
+    <p class="fiction-notice" id="dataset-notice">内置 CSV 为虚构样表，非真实统计。本地导入文件将单独标明来源性质。</p>
+
+    <section class="survey-loader" aria-label="调研文件">
+      <div class="data-toolbar">
+        <div class="source-summary"><strong id="source-name">尚未加载文件</strong><span id="source-meta">选择城市或导入 CSV</span></div>
+        <div class="loader-actions"><button type="button" id="choose-file">导入 CSV</button><input type="file" id="survey-file" accept=".csv,text/csv" aria-label="选择调研 CSV" hidden><button type="button" id="download-source" class="secondary" disabled>下载原文件</button><button type="button" id="clear-local" class="secondary" hidden>恢复样表</button></div>
+      </div>
+      <div class="loader-secondary"><details class="format-details"><summary>CSV 格式与模板</summary><p id="survey-format">基础五列：<code>人物序号,调研时间,公司,雇佣形式,工作时长</code>，可另加“岗位”列；岗位仅保留在原始 CSV，不用于页面筛选或统计。工时按每周小时读取。UTF-8 CSV，最多 5 MiB / 20,000 行，仅在浏览器读取，不上传或保存。</p><p>一行是一个匿名人物在一个调研日期的记录。编号保留前导零，同日重复编号会被拒绝；跨日期重访单独计为记录。“公司”表示实际工作单位或服务现场。</p><a href="./docs/examples/survey-template.csv" download>下载五列 CSV 模板</a></details><div id="sample-shortcuts" class="sample-shortcuts" role="group" aria-label="一键体验比较" hidden></div></div>
+      <p id="import-status" role="status" aria-live="polite"></p>
+    </section>
+    <div id="load-error" role="alert" hidden></div><p id="app-status" class="sr-only" role="status" aria-live="polite"></p>
+
+    <div id="observatory" class="observatory" hidden>
+      <aside class="city-controls" aria-labelledby="filters-heading">
+        <div class="filters-heading"><h2 id="filters-heading">筛选与比较</h2><div><button type="button" id="toggle-filters" class="ghost" aria-expanded="false" aria-controls="filter-fields" hidden>调整</button><button type="button" id="filter-reset" class="ghost">重置</button></div></div>
+        <p id="filter-scope" class="filter-scope"></p><div id="filter-fields">
+        <div class="filter-row"><span class="filter-label" id="date-label">调研时间</span><div id="date-tags" class="filter-tags" role="group" aria-labelledby="date-label"></div></div>
+        <div class="filter-row"><span class="filter-label" id="organization-label">工作单位</span><div id="organization-tags" class="filter-tags" role="group" aria-labelledby="organization-label"></div></div>
+        <div class="filter-row"><span class="filter-label" id="employment-label">用工标签</span><div id="employment-tags" class="filter-tags" role="group" aria-labelledby="employment-label"></div></div>
+        <div class="filter-row comparison-modes"><span class="filter-label" id="mode-label">比较方式</span><div id="mode-tags" class="filter-tags" role="group" aria-labelledby="mode-label"></div></div>
+        <div class="filter-row comparison-row" id="comparison-control" hidden><span class="filter-label" id="comparison-label">B 组</span><div id="comparison-tags" class="filter-tags" role="group" aria-labelledby="comparison-label"></div></div>
+        <button type="button" id="open-employment-guide" class="text-button">用工标签有什么区别？ ↗</button>
+        <p class="filter-help">数字为其余当前条件下的记录数。工作单位可能与签约雇主不同。</p>
+        </div>
+      </aside>
+
+      <div class="results-panel">
+        <section class="city-context" aria-labelledby="city-title"><div><p class="eyebrow" id="city-setting"></p><h2 id="city-title"></h2><p id="city-premise"></p></div><details class="measure-note"><summary>工时口径</summary><p id="measure-definition"></p><p id="role-definition"></p></details></section>
+        <aside id="measure-warning" class="measure-warning" hidden></aside>
+        <section class="city-evidence" aria-labelledby="chart-heading">
+          <div class="chart-heading"><h2 id="chart-heading">每周工作时长分布</h2><span class="evidence-badge">按组内记录数计算比例</span></div>
+          <div class="chart-summary"><div><span>A 组记录</span><strong id="metric-total">—</strong><small id="metric-people"></small></div><div><span>最常见区间</span><strong id="metric-mode">—</strong><small>小时 / 周</small></div></div>
+          <div id="chart" class="city-chart"></div><div id="chart-tooltip" class="chart-tooltip" role="tooltip" hidden></div>
+          <div class="chart-reference" aria-label="图表工时参考">
+            <div class="reference-controls"><span id="threshold-label">工时参考</span><div id="threshold-tags" class="filter-tags" role="group" aria-labelledby="threshold-label"></div><small>只改变参考占比，不改变分组</small></div>
+            <div class="reference-values"><span id="metric-threshold-label"></span><strong id="metric-share">—</strong><span id="metric-numerator"></span><span class="reference-delta" id="delta-reference"><strong id="metric-delta">—</strong><small id="metric-comparator"></small></span></div>
+          </div>
+          <p id="computed-note" class="computed-note"></p>
+          <details class="data-details"><summary>精确计数与比例</summary><div id="counts-table" class="table-scroll"></div></details>
+        </section>
+
+        <details class="survey-overview"><summary>各用工标签概览</summary><p id="overview-caption"></p><div class="table-scroll"><table id="employment-overview"><thead><tr><th scope="col">用工标签</th><th scope="col">记录数</th><th scope="col">独立人物数</th><th scope="col">参考占比</th></tr></thead><tbody></tbody></table></div></details>
+        <details class="survey-records"><summary>逐条调研记录 · 当前 A 组</summary><div class="table-scroll"><table id="record-table"><thead><tr><th scope="col">人物序号</th><th scope="col">调研时间</th><th scope="col">工作单位</th><th scope="col">用工标签</th><th scope="col">工作时长 / 周</th></tr></thead><tbody></tbody></table></div><div class="record-pagination"><button type="button" id="records-prev" class="secondary">上一页</button><span id="record-page"></span><button type="button" id="records-next" class="secondary">下一页</button></div></details>
+        <details class="city-methods"><summary>来源与计算方法</summary><p id="city-context-note"></p><p id="construction-note"></p><ul><li>总数为筛选后的记录数，独立人物数按匿名编号去重。多轮合计不代表独立抽样人数。</li><li>工时分档含下界、不含上界，75+ 为开放区间；原始数值不先四舍五入。</li><li>先汇总满足参考工时的记录再计算比例，不平均各组百分比。空组比例及差值为空，差值单位为百分点。</li><li>岗位不参与筛选、展示统计或汇总导出；原始 CSV 可保留岗位。</li></ul><a href="./data/survey-manifest.json" target="_blank" rel="noreferrer">内置数据清单</a><a href="./docs/FICTIONAL_CITY_DEMO.md">完整方法说明</a></details>
+        <section class="city-export" aria-label="导出当前结果"><div><h2>带走当前结果</h2><p>简报可离线打开，保留图表、汇总和当前筛选条件。</p></div><div class="export-actions"><button type="button" id="export-brief">下载简报</button><button type="button" id="copy-view" class="secondary">复制视图链接</button><details class="export-more"><summary>其他格式</summary><div><button type="button" id="export-svg" class="secondary">图表 SVG</button><button type="button" id="export-csv" class="secondary">汇总 CSV</button><button type="button" id="export-records" class="secondary">A 组原始 CSV</button></div><p>原始 CSV 保留可选岗位列，汇总和图表不包含岗位。</p></details></div><p id="export-status" role="status" aria-live="polite"></p><a href="./docs/examples/fictional-city-brief.html" target="_blank" rel="noreferrer">查看杭州简报样例 →</a></section>
+      </div>
+    </div>
+    <noscript><p>交互图表需要 JavaScript。可下载<a href="./data/surveys/hangzhou.synthetic.csv" download>杭州 CSV</a>或<a href="./docs/examples/survey-template.csv" download>五列模板</a>。</p></noscript>
+  </main>
+  <dialog id="employment-guide-dialog" aria-labelledby="employment-guide-title"><div class="dialog-heading"><div><p class="eyebrow">理解工作关系</p><h2 id="employment-guide-title">用工标签有什么区别？</h2></div><button type="button" id="close-employment-guide" aria-label="关闭用工说明">×</button></div><p id="employment-note"></p><div id="employment-definitions" class="employment-definitions"></div><p id="employment-context"></p><p id="employment-sources" class="employment-sources"></p></dialog>
+  <footer><span>Open Worktime · <span id="dataset-license">内置虚构样表：CC0 1.0</span></span><a href="./partners.html">研究合作 →</a></footer>
+  <script type="module" src="./survey-app.js"></script>
+</body>
+</html>

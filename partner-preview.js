@@ -7,7 +7,7 @@ const status = document.querySelector('#preview-status');
 const result = document.querySelector('#preview-result');
 const groupSelect = document.querySelector('#preview-group');
 const body = document.querySelector('#preview-rows');
-let groups = [], request = 0;
+let groups = [], request = 0, exampleLoading = false;
 
 function clear({ keepFile = false } = {}) {
   request += 1;
@@ -52,7 +52,11 @@ function show(text, isExample) {
   status.textContent = isExample
     ? 'Fictional example · not Better Work data. No real factory, worker or brand claim.'
     : 'Local file preview · not uploaded, saved or published. Source and publication permission have not been verified.';
-  document.querySelector('#preview-groups-note').textContent = `${groups.length} factory / round group(s). Each is shown separately; rounds are never pooled.`;
+  groupSelect.hidden = groups.length === 1;
+  document.querySelector('#preview-group-label').hidden = groups.length === 1;
+  document.querySelector('#preview-groups-note').textContent = groups.length === 1
+    ? `${groups[0].factory} · ${groups[0].round}`
+    : `${groups.length} factory / round group(s). Each is shown separately; rounds are never pooled.`;
   render(); result.hidden = false;
 }
 
@@ -63,7 +67,9 @@ function fail(error) {
   status.textContent = error.message;
 }
 
-sampleButton.addEventListener('click', async () => {
+async function loadExample() {
+  if (exampleLoading) return;
+  exampleLoading = true;
   clear(); const current = request;
   status.textContent = 'Loading the fictional example…';
   try {
@@ -72,7 +78,16 @@ sampleButton.addEventListener('click', async () => {
     const text = await response.text();
     if (current === request) show(text, true);
   } catch (error) { if (current === request) fail(error); }
-});
+  finally { exampleLoading = false; }
+}
+
+sampleButton.addEventListener('click', loadExample);
+const showLinkedExample = () => { if (location.hash === '#preview' && !groups.length) loadExample(); };
+window.addEventListener('hashchange', showLinkedExample);
+document.querySelectorAll('a[href="#preview"]').forEach(link => link.addEventListener('click', () => {
+  if (!groups.length) loadExample();
+}));
+showLinkedExample();
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0];

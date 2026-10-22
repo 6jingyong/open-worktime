@@ -1,0 +1,3 @@
+# These CSVs are identified by their exact SHA-256 bytes in survey-manifest.json.
+data/surveys/*.synthetic.csv -text
+docs/examples/survey-template.csv -text
