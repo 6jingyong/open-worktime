@@ -1,0 +1,13 @@
+{
+  "name": "open-worktime",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "preview:start": "node scripts/start-preview.mjs",
+    "test": "node --test test/*.test.mjs imports/test/*.test.mjs backend/test/*.test.mjs"
+  }
+}
