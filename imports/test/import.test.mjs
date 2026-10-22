@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildBundle, hoursToBucket, parseCsv } from '../lib.mjs';
 
-const here = new URL('../examples/', import.meta.url).pathname;
+const here = fileURLToPath(new URL('../examples/', import.meta.url));
 
 test('numeric weekly hours map to fixed buckets for observation data', () => {
   assert.equal(hoursToBucket(34.9), 'lt_35');

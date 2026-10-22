@@ -52,6 +52,18 @@ See `docs/CONTEXT_BASELINES.md` for the statistical boundary.
 
 The four `demo-*` entities in `brands.json` are fictional and are also CC0 1.0 demo material.
 
+## Fictional city demonstration
+
+`city-scenarios.json` contains original, deterministic synthetic aggregate counts authored for a user-requested demonstration. The cities draw on historical and fictional settings; the counts are not historical estimates, source-work canon, worker surveys, or partner data. The original counts are dedicated under **CC0 1.0**. This does not license third-party names or fictional settings. No third-party images or dialogue are included.
+
+The current city UI reads `surveys/*.synthetic.csv` and `survey-manifest.json`. These are independently authored fictional individual records, not records reconstructed from the earlier aggregate counts. Each of six cities contains 300 anonymous fictional characters over two survey dates (600 records). The five-column template in `docs/examples/survey-template.csv` is also original fictional material. These original records and template are dedicated under **CC0 1.0**. The manifest contains their SHA-256 hashes, definitions and generation settings; `scripts/generate-survey-demo.mjs` reproduces them deterministically.
+
+Revision `mixed-workplaces-v2` adds an optional occupation column to the six city samples and mixes arrangements within a shared work site. Occupations, employers, work sites and hours remain fictional. The basic five-column template and import remain compatible. Site/vendor maintenance is a service-context label which can overlap with outsourcing; the synthetic rows use one primary label each to avoid double counting. The Japanese official sources linked in the methodology support only explanatory distinctions and the historical boundary, never the fictional counts or numerical hours.
+
+Background references, where present, are labeled as context only. Numeric construction, definitions and the special Matrix measure boundary are documented in `docs/FICTIONAL_CITY_DEMO.md` and retained in downloadable briefs. Modern employment categories and institutions in historical samples are fictional mappings, not historical or legal claims.
+
+Locally imported files have unverified provenance and permission unless their bytes exactly match a bundled fictional sample or template. Importing a file does not grant CC0 or any publication license. The raw export (five columns plus optional occupation) contains no provenance fields; aggregate exports and HTML/SVG carry the source classification.
+
 ## Future community observations
 
 No license has been selected yet for future real community-contributed working-time observations. Do not assume those future records will be MIT, CC0, CC BY, or CC BY-SA merely because the software and entity catalogs use those licenses.

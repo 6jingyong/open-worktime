@@ -297,15 +297,29 @@ See [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md).
 
 ## Run locally
 
-The public prototype is dependency-free:
+The [six-city survey demonstration](cities.html) includes complete, downloadable fictional respondent CSVs for Alexandria, Hangzhou, London, Tokyo, Scrapyard and the Matrix: 300 anonymous characters and two survey dates (600 records) per city. Samples mix occupations and work arrangements within the same workplace; Tokyo's fictional Imperial Electronics factory includes directly employed designers, direct/agency assembly workers, direct/vendor-site engineers and outsourced security. Import a UTF-8 CSV with the original five columns (`人物序号,调研时间,公司,雇佣形式,工作时长`) and an optional `岗位` occupation column. A compact sidebar controls workplace, employment arrangement and date comparisons, with results alongside it. Occupations stay in raw CSV: they are excluded from page statistics, record tables, saved filters, summary exports and figures. Work-hour reference controls sit below the chart and do not change the groups. Workplace means the actual work site, which may differ from the contractual employer; Chinese labels are descriptive mappings across settings, with context notes distinguishing dispatch, outsourced services and vendor-site maintenance. Files stay in browser memory; raw CSV, summary CSV, SVG and offline briefs can be downloaded. Fictional samples are not historical evidence or a real-data acquisition milestone. See [format and methodology](docs/FICTIONAL_CITY_DEMO.md).
+
+The public prototype is dependency-free. With Node.js 22 or newer, run from the repository root (Windows, macOS or Linux; no install step):
 
 ```bash
-python -m http.server 8000
+npm start
 ```
 
-Then open `http://localhost:8000`.
+Then open `http://127.0.0.1:8000`, `http://127.0.0.1:8000/cities.html` for the individual CSV workflow, or `http://127.0.0.1:8000/partners.html#preview` for the aggregate preview. The local server binds only to this computer and does not run the intake backend.
 
-The repository also contains Node-based import tools and a disabled-by-default Cloudflare backend; those are optional for simply viewing the site.
+For a background preview that continues after the launching terminal exits, run `npm run preview:start`, or double-click `start-preview.cmd` on Windows. It reuses an existing Open Worktime preview, refuses an unrelated occupied port, and writes startup output to `output/local-preview/server.log`. Run the launcher again after restarting the computer; it does not install an automatic startup service.
+
+Run all local tests without installing dependencies:
+
+```bash
+npm test
+```
+
+If port 8000 is busy, use `$env:PORT = '8001'; npm start` in PowerShell, or `PORT=8001 npm start` in macOS/Linux shells.
+
+Python's `python -m http.server 8000 --bind 127.0.0.1` is an alternative if Python is installed. Python is not needed for the app, preview or Node tests; the existing GitHub Actions checks use Python for additional data/contract checks.
+
+The repository also contains Node-based import tools and a disabled-by-default Cloudflare backend; those are optional for simply viewing the site. See [local handoff and next steps](docs/LOCAL_HANDOFF.md) for environment requirements and remaining work.
 
 ---
 

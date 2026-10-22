@@ -1,0 +1,771 @@
+{
+  "version": "fictional-surveys-v1",
+  "evidence_class": "synthetic",
+  "authored_on": "2026-10-20",
+  "revision": "mixed-workplaces-v2",
+  "organization_definition": "实际工作单位或服务现场，不必是劳动合同中的雇主。",
+  "construction": "以实际工作单位为范围，独立设定岗位 × 用工标签的人数和基准工时；同一岗位可有多种关系。两项确定性偏移相加形成个体差异，少量记录增加延时；第二轮变化按岗位群组设置，也可能持平或下降。数值仅为创作，不是对某类用工工时更长的预判。没有使用或扩展任何真实或旧版汇总记录。",
+  "cities": [
+    {
+      "id": "alexandria",
+      "name": "亚历山大里亚",
+      "setting": "希腊化时期 · 历史氛围创作",
+      "motif": "港口、作坊与纸草",
+      "number": "01",
+      "path": "data/surveys/alexandria.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "bc45136467769e486bfb90e45f30d509fa7b7c79a73749227d08d7a47ed0666a",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "前200-06-01",
+        "前200-09-01"
+      ],
+      "measure": "fictional_actual_week",
+      "definition": "情景角色在一个假想七天周期中的实际劳动时间，按现代小时计。",
+      "context": "借用希腊化时期亚历山大里亚的题材。职业、样本和时间均为作者编排，不是古代劳动制度的复原。 样表中的单位、人物、调研日期和雇佣分类均为新编架空资料。",
+      "body_context": null,
+      "sources": [
+        {
+          "title": "OpenStax · The Hellenistic Era",
+          "url": "https://openstax.org/books/world-history-volume-1/pages/6-3-the-hellenistic-era",
+          "note": "仅用于时代背景，不是数字来源。"
+        }
+      ],
+      "employment_context": "中文用工标签用于跨情境对照：历史样表按直接工作、经中介安排、承包服务、设备商驻场等关系作架空映射。不同地区与年代的制度不等同；驻场售后优先标记服务场景，不重复计入外包组。",
+      "profiles": [
+        {
+          "organization": "港口自营作坊",
+          "occupation": "自营手艺人",
+          "employment": "self_employed",
+          "people": 72,
+          "baseline_hours": 47,
+          "spread_hours": 10,
+          "second_round_change": 3
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "造纸工",
+          "employment": "direct_contract",
+          "people": 48,
+          "baseline_hours": 48,
+          "spread_hours": 8,
+          "second_round_change": 4
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "抄写员",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 42,
+          "spread_hours": 7,
+          "second_round_change": 2
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "造纸工",
+          "employment": "labor_dispatch",
+          "people": 12,
+          "baseline_hours": 49,
+          "spread_hours": 9,
+          "second_round_change": 3
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "搬运工",
+          "employment": "labor_dispatch",
+          "people": 24,
+          "baseline_hours": 51,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "守门人",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 44,
+          "spread_hours": 8,
+          "second_round_change": -1
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "搬运工",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 50,
+          "spread_hours": 10,
+          "second_round_change": 2
+        },
+        {
+          "organization": "纸草工坊",
+          "occupation": "器具修理匠",
+          "employment": "onsite_service",
+          "people": 18,
+          "baseline_hours": 43,
+          "spread_hours": 9,
+          "second_round_change": 1
+        },
+        {
+          "organization": "王室文书署",
+          "occupation": "文书",
+          "employment": "direct_contract",
+          "people": 30,
+          "baseline_hours": 39,
+          "spread_hours": 7,
+          "second_round_change": 2
+        },
+        {
+          "organization": "郊外租作农庄",
+          "occupation": "佃作农人",
+          "employment": "labor_outsource",
+          "people": 48,
+          "baseline_hours": 53,
+          "spread_hours": 11,
+          "second_round_change": 6
+        }
+      ]
+    },
+    {
+      "id": "hangzhou",
+      "name": "杭州",
+      "setting": "《大明王朝1566》· 剧作氛围创作",
+      "motif": "织机、账房与交期",
+      "number": "02",
+      "path": "data/surveys/hangzhou.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "8f42714a202affac7a3a15f373ef042dd7b76f72dd8a040b84750db2d881ca62",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "1566-06-01",
+        "1566-09-01"
+      ],
+      "measure": "fictional_actual_week",
+      "definition": "情景角色在一个假想七天周期中的实际劳动时间，按现代小时计。",
+      "context": "按照用户设定，淳安农户、佃作农庄、杭州府衙、江南制造局、通运镖局与织机维修行同时进入架空杭州。江南制造局等机构名及现代雇佣分类只作跨时代演示，不是对1566年制度的复原。",
+      "body_context": null,
+      "sources": [],
+      "employment_context": "中文用工标签用于跨情境对照：历史样表按直接工作、经中介安排、承包服务、设备商驻场等关系作架空映射。不同地区与年代的制度不等同；驻场售后优先标记服务场景，不重复计入外包组。",
+      "profiles": [
+        {
+          "organization": "淳安农户",
+          "occupation": "自营农人",
+          "employment": "self_employed",
+          "people": 72,
+          "baseline_hours": 46,
+          "spread_hours": 11,
+          "second_round_change": 6
+        },
+        {
+          "organization": "淳安佃作农庄",
+          "occupation": "佃作农人",
+          "employment": "labor_outsource",
+          "people": 36,
+          "baseline_hours": 51,
+          "spread_hours": 11,
+          "second_round_change": 7
+        },
+        {
+          "organization": "杭州府衙",
+          "occupation": "官差",
+          "employment": "direct_contract",
+          "people": 18,
+          "baseline_hours": 44,
+          "spread_hours": 9,
+          "second_round_change": 3
+        },
+        {
+          "organization": "杭州府衙",
+          "occupation": "文书",
+          "employment": "direct_contract",
+          "people": 6,
+          "baseline_hours": 40,
+          "spread_hours": 6,
+          "second_round_change": 2
+        },
+        {
+          "organization": "杭州府衙",
+          "occupation": "院落看护",
+          "employment": "labor_outsource",
+          "people": 6,
+          "baseline_hours": 43,
+          "spread_hours": 8,
+          "second_round_change": 0
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "织工",
+          "employment": "direct_contract",
+          "people": 48,
+          "baseline_hours": 52,
+          "spread_hours": 9,
+          "second_round_change": 5
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "机修匠",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 47,
+          "spread_hours": 9,
+          "second_round_change": 3
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "账房",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 42,
+          "spread_hours": 7,
+          "second_round_change": 2
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "织工",
+          "employment": "labor_dispatch",
+          "people": 24,
+          "baseline_hours": 54,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "机修匠",
+          "employment": "onsite_service",
+          "people": 12,
+          "baseline_hours": 46,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "护院",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 45,
+          "spread_hours": 8,
+          "second_round_change": -1
+        },
+        {
+          "organization": "江南制造局",
+          "occupation": "货运工",
+          "employment": "labor_outsource",
+          "people": 6,
+          "baseline_hours": 51,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "通运镖局",
+          "occupation": "镖师",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 50,
+          "spread_hours": 13,
+          "second_round_change": 5
+        },
+        {
+          "organization": "织机维修行",
+          "occupation": "机修匠",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 43,
+          "spread_hours": 10,
+          "second_round_change": 2
+        }
+      ]
+    },
+    {
+      "id": "london",
+      "name": "伦敦",
+      "setting": "工业革命时期 · 历史氛围创作",
+      "motif": "蒸汽、车间与钟声",
+      "number": "03",
+      "path": "data/surveys/london.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "ec35c0ecf4828dbbe89237aa9c73e59a7cc5cb35a67506661ccb8a97ae7e6cc4",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "1840-06-01",
+        "1840-09-01"
+      ],
+      "measure": "fictional_actual_week",
+      "definition": "情景角色在一个假想七天周期中的实际劳动时间，按现代小时计。",
+      "context": "使用工业革命时期伦敦的题材。所有工时与职业构成都是演示假设，不是英国历史工时估计。 样表中的单位、人物、调研日期和雇佣分类均为新编架空资料。",
+      "body_context": null,
+      "sources": [],
+      "employment_context": "中文用工标签用于跨情境对照：历史样表按直接工作、经中介安排、承包服务、设备商驻场等关系作架空映射。不同地区与年代的制度不等同；驻场售后优先标记服务场景，不重复计入外包组。",
+      "profiles": [
+        {
+          "organization": "泰晤士自营修缮铺",
+          "occupation": "自营修缮匠",
+          "employment": "self_employed",
+          "people": 60,
+          "baseline_hours": 51,
+          "spread_hours": 11,
+          "second_round_change": 2
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "纺织工",
+          "employment": "direct_contract",
+          "people": 84,
+          "baseline_hours": 61,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "机修工",
+          "employment": "direct_contract",
+          "people": 18,
+          "baseline_hours": 55,
+          "spread_hours": 10,
+          "second_round_change": 3
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "事务员",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 44,
+          "spread_hours": 7,
+          "second_round_change": 2
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "纺织工",
+          "employment": "labor_dispatch",
+          "people": 36,
+          "baseline_hours": 59,
+          "spread_hours": 11,
+          "second_round_change": 5
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "门卫",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 48,
+          "spread_hours": 9,
+          "second_round_change": 0
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "清洁工",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 43,
+          "spread_hours": 9,
+          "second_round_change": -1
+        },
+        {
+          "organization": "河岸纺织厂",
+          "occupation": "机修工",
+          "employment": "onsite_service",
+          "people": 18,
+          "baseline_hours": 50,
+          "spread_hours": 11,
+          "second_round_change": 4
+        },
+        {
+          "organization": "码头转运公司",
+          "occupation": "搬运工",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 56,
+          "spread_hours": 12,
+          "second_round_change": 3
+        },
+        {
+          "organization": "郊区承包农庄",
+          "occupation": "农务工",
+          "employment": "labor_outsource",
+          "people": 24,
+          "baseline_hours": 51,
+          "spread_hours": 11,
+          "second_round_change": 5
+        }
+      ]
+    },
+    {
+      "id": "tokyo",
+      "name": "东京",
+      "setting": "昭和后期 · 历史氛围创作",
+      "motif": "流水线、办公室与末班车",
+      "number": "04",
+      "path": "data/surveys/tokyo.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "fbf92dc186710b9112fcf43f16b6ebcffd15cb5e1305d235c06c00fa08e9ab41",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "1978-06-01",
+        "1978-09-01"
+      ],
+      "measure": "fictional_actual_week",
+      "definition": "情景角色在一个假想七天周期中的实际劳动时间，按现代小时计。",
+      "context": "借用昭和后期东京的题材。未使用真实日本统计、企业资料或加班调查，通勤不计入劳动时间。 样表中的单位、人物、调研日期和雇佣分类均为新编架空资料。",
+      "body_context": null,
+      "sources": [],
+      "employment_context": "东京样表保留1978年的时代氛围；日本《劳动者派遣法》于1986年7月施行，因此这里的“劳务派遣”是后世工作关系的架空映射，不表示1978年已有相同制度。现代日本的“派遣”与“请负”可分别帮助理解接收单位指挥、承包商组织服务的差别，不能与中国分类作法律等同。帝国电子厂为虚构厂名。",
+      "profiles": [
+        {
+          "organization": "帝国电子厂",
+          "occupation": "产品设计师",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 44,
+          "spread_hours": 8,
+          "second_round_change": 3
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "流水线工人",
+          "employment": "direct_contract",
+          "people": 72,
+          "baseline_hours": 45,
+          "spread_hours": 9,
+          "second_round_change": 5
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "流水线工人",
+          "employment": "labor_dispatch",
+          "people": 42,
+          "baseline_hours": 46,
+          "spread_hours": 10,
+          "second_round_change": 4
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "现场工程师",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 46,
+          "spread_hours": 9,
+          "second_round_change": 4
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "现场工程师",
+          "employment": "onsite_service",
+          "people": 18,
+          "baseline_hours": 44,
+          "spread_hours": 10,
+          "second_round_change": 2
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "保安",
+          "employment": "labor_outsource",
+          "people": 18,
+          "baseline_hours": 44,
+          "spread_hours": 8,
+          "second_round_change": -1
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "保洁员",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 38,
+          "spread_hours": 7,
+          "second_round_change": 0
+        },
+        {
+          "organization": "帝国电子厂",
+          "occupation": "仓储员",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 44,
+          "spread_hours": 9,
+          "second_round_change": 3
+        },
+        {
+          "organization": "街区自营商铺",
+          "occupation": "自营店主",
+          "employment": "self_employed",
+          "people": 32,
+          "baseline_hours": 45,
+          "spread_hours": 12,
+          "second_round_change": 1
+        },
+        {
+          "organization": "街区自营商铺",
+          "occupation": "自营修理师",
+          "employment": "self_employed",
+          "people": 16,
+          "baseline_hours": 42,
+          "spread_hours": 10,
+          "second_round_change": -2
+        },
+        {
+          "organization": "城市配送承包社",
+          "occupation": "配送员",
+          "employment": "labor_outsource",
+          "people": 30,
+          "baseline_hours": 48,
+          "spread_hours": 11,
+          "second_round_change": 3
+        }
+      ]
+    },
+    {
+      "id": "scrapyard",
+      "name": "废铁城",
+      "setting": "《铳梦》· 作品氛围创作",
+      "motif": "废件、修缮与天空",
+      "number": "05",
+      "path": "data/surveys/scrapyard.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "b5f639c84593f0a8004c33bde5325add11e362a52d5d2504161f99b269dc2f7e",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "2530-06-01",
+        "2530-09-01"
+      ],
+      "measure": "fictional_actual_week",
+      "definition": "情景角色在一个假想七天周期中的实际劳动时间，按现代小时计。",
+      "context": "“废铁城 / Scrapyard”借自《铳梦》题材。岗位与全部数字为独立创作，不是原作设定资料。 样表中的单位、人物、调研日期和雇佣分类均为新编架空资料。",
+      "body_context": null,
+      "sources": [
+        {
+          "title": "Kodansha · Battle Angel Alita",
+          "url": "https://kodansha.us/series/battle-angel-alita/",
+          "note": "出版社作品介绍，仅用于作品背景，不是数字来源。"
+        }
+      ],
+      "employment_context": "中文用工标签用于跨情境对照：历史样表按直接工作、经中介安排、承包服务、设备商驻场等关系作架空映射。不同地区与年代的制度不等同；驻场售后优先标记服务场景，不重复计入外包组。",
+      "profiles": [
+        {
+          "organization": "废铁城自营修复摊",
+          "occupation": "自营修复师",
+          "employment": "self_employed",
+          "people": 72,
+          "baseline_hours": 55,
+          "spread_hours": 14,
+          "second_round_change": 4
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "装配工",
+          "employment": "direct_contract",
+          "people": 60,
+          "baseline_hours": 59,
+          "spread_hours": 11,
+          "second_round_change": 5
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "机修师",
+          "employment": "direct_contract",
+          "people": 18,
+          "baseline_hours": 53,
+          "spread_hours": 10,
+          "second_round_change": 3
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "协调员",
+          "employment": "direct_contract",
+          "people": 12,
+          "baseline_hours": 44,
+          "spread_hours": 8,
+          "second_round_change": 1
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "装配工",
+          "employment": "labor_dispatch",
+          "people": 42,
+          "baseline_hours": 58,
+          "spread_hours": 12,
+          "second_round_change": 4
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "搬运工",
+          "employment": "labor_dispatch",
+          "people": 12,
+          "baseline_hours": 62,
+          "spread_hours": 13,
+          "second_round_change": 5
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "警卫",
+          "employment": "labor_outsource",
+          "people": 18,
+          "baseline_hours": 52,
+          "spread_hours": 10,
+          "second_round_change": -1
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "清洁工",
+          "employment": "labor_outsource",
+          "people": 18,
+          "baseline_hours": 48,
+          "spread_hours": 10,
+          "second_round_change": 2
+        },
+        {
+          "organization": "地面零件工坊",
+          "occupation": "义体维修师",
+          "employment": "onsite_service",
+          "people": 24,
+          "baseline_hours": 49,
+          "spread_hours": 12,
+          "second_round_change": 4
+        },
+        {
+          "organization": "回收承包站",
+          "occupation": "回收分拣工",
+          "employment": "labor_outsource",
+          "people": 24,
+          "baseline_hours": 57,
+          "spread_hours": 12,
+          "second_round_change": 3
+        }
+      ]
+    },
+    {
+      "id": "matrix",
+      "name": "母体",
+      "setting": "《黑客帝国》· 缸中之脑思想实验",
+      "motif": "意识、工作日与舱体",
+      "number": "06",
+      "path": "data/surveys/matrix.synthetic.csv",
+      "evidence_class": "synthetic",
+      "sha256": "fbbe17f11aaf3d8ddf81eeceaf0c42f7e743d22f6fda18b528563b373f9d7acf",
+      "rows": 600,
+      "people": 300,
+      "dates": [
+        "1999-06-01",
+        "1999-09-01"
+      ],
+      "measure": "fictional_subjective_week",
+      "definition": "角色在模拟意识中体验到的一个假想七天周期的劳动时间；不是身体实际劳动时间。",
+      "context": "用户指定的母体／缸中之脑创作场景。与其他五城的“实际劳动时间”口径不同，跨城差值不计算。 样表中的单位、人物、调研日期和雇佣分类均为新编架空资料。",
+      "body_context": {
+        "hours": 168,
+        "label": "舱体接入时间",
+        "note": "额外假设一周 7 × 24 小时持续接入。不是工时调查，不计入劳动时间，也不归入 75+ 档。"
+      },
+      "sources": [
+        {
+          "title": "Warner Bros. · The Matrix",
+          "url": "https://www.warnerbros.com/movies/matrix",
+          "note": "作品入口；本页口径与数字为作者思想实验，并非电影提供的统计。"
+        }
+      ],
+      "employment_context": "中文用工标签用于跨情境对照：历史样表按直接工作、经中介安排、承包服务、设备商驻场等关系作架空映射。不同地区与年代的制度不等同；驻场售后优先标记服务场景，不重复计入外包组。",
+      "profiles": [
+        {
+          "organization": "模拟自营维修铺",
+          "occupation": "自营维修师",
+          "employment": "self_employed",
+          "people": 48,
+          "baseline_hours": 42,
+          "spread_hours": 10,
+          "second_round_change": 1
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "软件开发员",
+          "employment": "direct_contract",
+          "people": 60,
+          "baseline_hours": 43,
+          "spread_hours": 8,
+          "second_round_change": 3
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "文书",
+          "employment": "direct_contract",
+          "people": 36,
+          "baseline_hours": 39,
+          "spread_hours": 7,
+          "second_round_change": 2
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "IT 工程师",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 42,
+          "spread_hours": 9,
+          "second_round_change": 4
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "文书",
+          "employment": "labor_dispatch",
+          "people": 36,
+          "baseline_hours": 40,
+          "spread_hours": 8,
+          "second_round_change": 1
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "IT 工程师",
+          "employment": "labor_dispatch",
+          "people": 12,
+          "baseline_hours": 43,
+          "spread_hours": 9,
+          "second_round_change": 2
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "保洁员",
+          "employment": "labor_outsource",
+          "people": 24,
+          "baseline_hours": 37,
+          "spread_hours": 8,
+          "second_round_change": -1
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "保安",
+          "employment": "labor_outsource",
+          "people": 12,
+          "baseline_hours": 43,
+          "spread_hours": 9,
+          "second_round_change": 0
+        },
+        {
+          "organization": "模拟办公室",
+          "occupation": "IT 工程师",
+          "employment": "onsite_service",
+          "people": 24,
+          "baseline_hours": 42,
+          "spread_hours": 10,
+          "second_round_change": 3
+        },
+        {
+          "organization": "模拟市政事务所",
+          "occupation": "市政文书",
+          "employment": "direct_contract",
+          "people": 24,
+          "baseline_hours": 39,
+          "spread_hours": 7,
+          "second_round_change": 1
+        }
+      ]
+    }
+  ],
+  "template": {
+    "name": "五列 CSV 模板",
+    "evidence_class": "synthetic",
+    "path": "docs/examples/survey-template.csv",
+    "sha256": "9afdbb6d34e5194cdd3c59ac1cca9697522f7fe54bafa033cc9c8a72b86c9f83",
+    "measure": "fictional_actual_week",
+    "definition": "用于说明格式的虚构每周工时。",
+    "context": "五列模板中的编号、单位、日期和工时都是格式演示值。",
+    "setting": "虚构 CSV 模板"
+  }
+}
