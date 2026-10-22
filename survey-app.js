@@ -1,5 +1,5 @@
 import { MAX_SURVEY_BYTES, EMPLOYMENT, EMPLOYMENT_NOTE, EMPLOYMENT_SOURCES, parseSurveyCsv, recordsCsv, employmentLabel, filterRecords, resolveSurveyState,
-  makeSurveyView, distributionSvg, tableMarkup, surveyBrief, surveySummaryCsv } from './survey.mjs';
+  makeSurveyView, sampleViews, distributionSvg, tableMarkup, surveyBrief, surveySummaryCsv } from './survey.mjs';
 
 const $ = selector => document.querySelector(selector);
 const text = (selector, value) => { $(selector).textContent = value; };
@@ -39,7 +39,7 @@ function locationState() {
 
 async function setState(patch = {}) {
   const token = ++viewRequest;
-  if (patch.organization !== undefined || patch.mode === 'employment') patch.compareEmployment = '';
+  if ((patch.organization !== undefined || patch.mode === 'employment') && patch.compareEmployment === undefined) patch.compareEmployment = '';
   state = resolveSurveyState(source, new URLSearchParams(Object.entries({ ...state, ...patch })));
   page = 0; render(); locationState();
   if (state.mode === 'city') {
@@ -60,7 +60,7 @@ async function selectCity(cityId, params = new URLSearchParams()) {
     if (!manifest.cities.some(item => item.id === state.peer && item.id !== cityId)) state.peer = manifest.cities.find(item => item.id !== cityId).id;
     $('#survey-file').value = ''; $('#import-status').classList.remove('preview-error');
     await setState();
-    text('#import-status', `已从 ${source.fileName} 读取 ${source.survey.records.length} 条虚构调研记录。`);
+    text('#import-status', '');
   } catch (error) { if (token === request) fail(error); }
 }
 
@@ -148,6 +148,16 @@ function render(recompute = true) {
   text('#source-name', source.fileName);
   $('#download-source').disabled = false;
   text('#source-meta', `${survey.records.length} 条原始记录 · ${survey.people} 个匿名人物 · ${survey.dates.length} 个调研日期 · ${survey.organizations.length} 个单位`);
+  const examples = sampleViews(source);
+  $('#sample-shortcuts').hidden = !examples.length;
+  $('#sample-shortcuts').replaceChildren(...examples.map(example => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'text-button';
+    button.textContent = example.label + ' →'; button.title = example.patch.organization; button.dataset.example = example.id;
+    button.addEventListener('click', async () => {
+      await setState(example.patch);
+      $(`#sample-shortcuts [data-example="${example.id}"]`)?.focus({ preventScroll:true });
+    }); return button;
+  }));
   $('#clear-local').hidden = !source.local;
   tags('#date-tags', counted([...(state.mode === 'date' ? [] : [['all', '全部日期']]), ...survey.dates.map(date => [date, date])], 'date'), state.date, 'date');
   tags('#organization-tags', counted([...(state.mode === 'organization' ? [] : [['all', '所有单位']]), ...survey.organizations.map(name => [name, name])], 'organization'), state.organization, 'organization');
@@ -276,9 +286,13 @@ async function boot() {
     $('#export-svg').addEventListener('click', () => download(distributionSvg(view), 'image/svg+xml;charset=utf-8', name('svg')));
     $('#export-csv').addEventListener('click', () => download(surveySummaryCsv(view), 'text/csv;charset=utf-8', name('summary.csv')));
     $('#export-records').addEventListener('click', () => download(recordsCsv(view.current.records), 'text/csv;charset=utf-8', name('records.csv')));
-    $('#reset-view').addEventListener('click', () => { state = resolveSurveyState(source); setState(); });
     $('#copy-view').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(location.href); text('#export-status', source.local ? '已复制页面链接。导入文件与筛选不会随链接传递，重新打开时需再次选择文件。' : '已复制内置 CSV 的筛选视图链接；链接仍指向本机服务。'); }
+      try {
+        await navigator.clipboard.writeText(location.href);
+        const localAddress = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+        text('#export-status', source.local ? '已复制页面链接。导入文件与筛选不会随链接传递，重新打开时需再次选择文件。'
+          : localAddress ? '已复制筛选视图链接。此地址仅供本机使用；对外分享可下载离线简报。' : '已复制筛选视图链接，打开即可恢复当前示例与比较条件。');
+      }
       catch { text('#export-status', '可直接复制地址栏链接；本地导入文件不会随链接传递。'); }
     });
     compact.addEventListener('change', () => { if (view) { $('#chart').innerHTML = distributionSvg(view, { compact: compact.matches, dense:!compact.matches, showThreshold:false }); attachTooltips(); } });

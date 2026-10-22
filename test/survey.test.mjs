@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { MAX_SURVEY_BYTES, parseSurveyCsv, recordsCsv, dateKey, resolveSurveyState, makeSurveyView, surveySummaryCsv, surveyBrief, distributionSvg } from '../survey.mjs';
+import { MAX_SURVEY_BYTES, parseSurveyCsv, recordsCsv, dateKey, resolveSurveyState, makeSurveyView, sampleViews, surveySummaryCsv, surveyBrief, distributionSvg } from '../survey.mjs';
 import { parseCsv } from '../imports/lib.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -14,6 +14,29 @@ const sourceFor = id => {
 const hangzhou = sourceFor('hangzhou');
 const header = '人物序号,调研时间,公司,雇佣形式,工作时长';
 const viewFor = values => makeSurveyView(hangzhou, resolveSurveyState(hangzhou, new URLSearchParams(values)));
+
+test('sample shortcuts compare observed groups at the same workplace and keep imported files out', () => {
+  const tokyo = sourceFor('tokyo');
+  for (const source of manifest.cities.map(city => sourceFor(city.id))) {
+    const examples = sampleViews(source);
+    assert.equal(examples.length, 2);
+    for (const example of examples) {
+      const view = makeSurveyView(source, resolveSurveyState(source, new URLSearchParams(example.patch)));
+      assert.ok(view.current.total > 0 && view.comparator.total > 0);
+      assert.equal(view.current.filters.organization, view.comparator.filters.organization);
+      assert.equal(view.reason, '');
+    }
+  }
+  const comparison = sampleViews(tokyo).find(example => example.id === 'employment').patch;
+  const view = makeSurveyView(tokyo, resolveSurveyState(tokyo, new URLSearchParams(comparison)));
+  assert.equal(comparison.organization, '帝国电子厂');
+  assert.equal(view.current.total, 132);
+  assert.equal(view.comparator.total, 42);
+  assert.deepEqual(sampleViews({ ...tokyo, local:true }), []);
+  assert.deepEqual(sampleViews({ ...tokyo, evidence_class:'unverified' }), []);
+  const singleRound = { ...tokyo, survey:parseSurveyCsv(header + '\n001,2026-10-01,工坊,直接雇佣,40\n') };
+  assert.deepEqual(sampleViews(singleRound), []);
+});
 
 test('six bundled CSVs match their manifest and contain 300 independent fictional people over two rounds', () => {
   assert.equal(manifest.cities.length, 6);

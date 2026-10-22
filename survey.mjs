@@ -27,6 +27,24 @@ const employmentAliases = new Map(EMPLOYMENT.flatMap(item => [[item.id, item.id]
 for (const [label, id] of [['直接雇用','direct_contract'], ['直接劳动合同','direct_contract'], ['其他','other_unknown'], ['不确定','other_unknown'], ['其他/未知','other_unknown']]) employmentAliases.set(label, id);
 export const employmentLabel = id => EMPLOYMENT.find(item => item.id === id)?.label ?? id;
 
+export function sampleViews(source) {
+  if (source.local || source.evidence_class !== 'synthetic') return [];
+  const { survey } = source, date = survey.dates.at(-1);
+  const sites = survey.organizations.map(organization => ({ organization,
+    records: survey.records.filter(row => row.organization === organization && row.date === date)
+  })).sort((a, b) => b.records.length - a.records.length);
+  const views = [];
+  const mixed = sites.find(site => ['direct_contract', 'labor_dispatch'].every(type => site.records.some(row => row.employment === type)));
+  if (mixed) views.push({ id:'employment', label:'同单位不同用工', patch:{ mode:'employment', date,
+    organization:mixed.organization, employment:'direct_contract', compareEmployment:'labor_dispatch' } });
+  const repeated = sites.find(site => survey.records.some(row => row.organization === site.organization && row.date !== date));
+  if (repeated) {
+    const compareDate = survey.dates.filter(value => value !== date && survey.records.some(row => row.organization === repeated.organization && row.date === value)).at(-1);
+    views.push({ id:'date', label:'同单位跨期', patch:{ mode:'date', date, compareDate, organization:repeated.organization, employment:'all' } });
+  }
+  return views;
+}
+
 function csvRows(text) {
   const rows = []; let fields = [], field = '', quoted = false, closed = false, line = 1, rowLine = 1;
   const pushField = () => { fields.push(field); field = ''; closed = false; };

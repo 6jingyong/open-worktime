@@ -58,6 +58,8 @@ Do **not** request names, phone numbers, employee IDs, exact home locations, or 
 
 ### Proposed outreach
 
+For the first contact, prefer the shorter [tool trial and feedback invitation](OUTREACH_READINESS.md), checked on 2026-10-23. The detailed data request below is a follow-up once the recipient expresses interest. Neither draft authorizes sending email.
+
 Contact: `research@betterwork.org`
 
 Suggested subject:

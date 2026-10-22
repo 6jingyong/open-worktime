@@ -88,7 +88,7 @@ Raw microdata does **not** need to become public. If required, a partner can kee
 anonymous_factory_id | survey_round | weekly_hours_bucket | count
 ```
 
-**Try it without GitHub:** [Open the aggregate preview](https://6jingyong.github.io/open-worktime/partners.html#preview), click **Show the fictional example**, and see the existing example table become a distribution with sample size. You can also download the example CSV or select a small approved aggregate CSV locally. File contents stay in your browser, with no upload, storage or publication. Each factory and survey round is shown separately.
+**Try it without GitHub:** [Open the aggregate preview](https://6jingyong.github.io/open-worktime/partners.html#preview) to load the fictional count table automatically and see its distribution and sample size. Expand **Try your own aggregate CSV** to select a small approved file locally. File contents stay in your browser, with no upload, storage or publication. Each factory and survey round is shown separately. See the [outreach readiness review and short first-contact draft](docs/OUTREACH_READINESS.md) before sharing.
 
 The preview accepts complete ten-bucket distributions with unweighted integer counts; missing or suppressed cells are never assumed to be zero. Other formats can be discussed by email. A successful preview does not establish publication permission, representativeness or the source's working-time definition.
 
